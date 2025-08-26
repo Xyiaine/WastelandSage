@@ -1,0 +1,183 @@
+AI GM Assistant – Wasteland Edition
+
+(Dieselpunk / Mad Max / Fallout inspired)
+
+🎯 Core Idea
+
+A GM helper app that:
+
+Builds modular 4h RPG sessions (structure + pacing).
+
+Generates context-aware random events.
+
+Stores everything in a node-based scenario library (events, NPCs, factions, items, locations).
+
+Alternates between two adventure creators:
+
+On the Road (fast, survival, chaos)
+
+City / Camp (slow, intrigue, factions)
+
+Uses AI API to keep events consistent with past nodes.
+
+🗂️ Main Features
+1. Session Builder
+
+Default session split into 5 phases: Hook → Exploration → Rising Tension → Climax → Resolution.
+
+Each phase pulls events from road/city creators depending on context.
+
+GM can rearrange or skip phases.
+
+2. Dual Adventure Creators
+
+Two separate modules for different storytelling rhythms:
+
+🚚 On the Road Creator
+
+Generates fast-paced survival events (mutants, ambushes, storms, resource scarcity).
+
+Pacing buttons: Accelerate (combat), Slow Down (exploration), Add Tension (scarcity/betrayal), Resolve (escape/showdown).
+
+Events tie into nodes: convoys, raiders, wasteland hazards, fuel, broken vehicles.
+
+🏙️ City / Camp Creator
+
+Generates intrigue-driven events (faction politics, riots, betrayals, resource shortages).
+
+Pacing buttons: Accelerate (riot/attack), Slow Down (social hook, trade), Add Tension (corruption, betrayal), Resolve (trial, coup, decision).
+
+Events tie into nodes: factions, leaders, traders, bars, bunkers.
+
+3. Node-Based Scenario Library 🕸️ (Core Backbone)
+
+A knowledge graph that stores all scenario information.
+
+Node Types:
+
+Event Nodes → encounters, random triggers.
+
+NPC Nodes → raiders, traders, warlords.
+
+Faction Nodes → gangs, cults, barons.
+
+Location Nodes → highways, bunkers, cities.
+
+Item Nodes → fuel, relics, weapons.
+
+Relationships:
+
+Temporal (Event → Event timeline).
+
+Spatial (Event → Location).
+
+Factional (NPC → Faction, Faction → Location).
+
+Ownership (NPC → Item).
+
+Views:
+
+Timeline Mode → chronological sequence of sessions/events.
+
+Graph Mode → interactive network of nodes + links.
+
+Management:
+
+Auto-generated nodes from events.
+
+Manual node editing (add/delete/merge).
+
+AI suggestions for linking nodes (“This raider probably works for the Iron Vultures”).
+
+4. Pacing Controls (Global)
+
+Accelerate → insert conflict node.
+
+Slow Down → insert roleplay node.
+
+Add Tension → inject scarcity, betrayal, surprise.
+
+Resolve → tie unresolved event nodes into conclusions.
+
+Works in both Road + City creators, always feeding into the node graph.
+
+5. AI API Integration
+
+Input: current session phase, node graph, past session log, player actions.
+
+Output: context-aware events consistent with ongoing story.
+
+Modes:
+
+Chaos Mode (Mad Max) → unpredictable, high-action events.
+
+Continuity Mode (Fallout) → logical, story-consistent developments.
+
+6. Timeline Manager
+
+Logs all events into a session timeline.
+
+Editable by GM (drag, reorder, delete).
+
+Exportable (Markdown, PDF).
+
+🛠️ Dev Considerations
+
+Frontend:
+
+UI needs:
+
+Dual creators (Road/City).
+
+Node graph view (interactive, zoomable).
+
+Timeline view (sortable list).
+
+Control buttons (Accelerate, Slow Down, Add Tension, Resolve).
+
+Graph visualization library (e.g. D3.js, Cytoscape.js).
+
+Backend:
+
+Store nodes and relationships (Graph DB like Neo4j, or relational DB with adjacency).
+
+API calls to AI service for event contextualization.
+
+Event table system (modular packs).
+
+AI Integration:
+
+All event generation runs through AI API.
+
+API must receive session state (nodes + timeline) to generate coherent results.
+
+🚀 Example Workflow
+
+GM starts session → chooses On the Road Creator.
+
+Event generated: “Ambush by dune buggy raiders.”
+
+Event Node created + linked to NPC Node (raider gang), Faction Node (Iron Vultures), Location Node (Wasteland Route 19).
+
+GM presses Slow Down → scavenger NPC event is added.
+
+New NPC Node created, linked to Location Node.
+
+Later, group reaches a settlement → switch to City Creator.
+
+Event generated: “Faction leader accuses PCs of theft.”
+
+Event Node linked to Faction Node + NPC Node from earlier.
+
+At end, GM exports timeline → recap shows continuity between road & city events.
+
+🌍 Extensibility
+
+Add-on event packs (Mutant Horror, Tech Relics, Faction Intrigue).
+
+Procedural map integration (nodes linked to geography).
+
+Multiplayer GM tools (co-op campaigns).
+
+✅ In short:
+This app is a dual-phase session builder (road vs. city), powered by an AI-aware node graph that stores everything, generates coherent events, and helps GMs maintain campaign continuity.
