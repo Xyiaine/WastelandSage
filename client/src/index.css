@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 10%);
+  --foreground: hsl(0 0% 91%);
+  --card: hsl(0 0% 7%);
+  --card-foreground: hsl(0 0% 85%);
+  --popover: hsl(0 0% 10%);
+  --popover-foreground: hsl(0 0% 91%);
+  --primary: hsl(16 71% 48%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(0 0% 17%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(0 0% 25%);
+  --muted-foreground: hsl(0 0% 65%);
+  --accent: hsl(16 71% 48%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 25%);
+  --input: hsl(0 0% 17%);
+  --ring: hsl(16 71% 48%);
+  --chart-1: hsl(16 71% 48%);
+  --chart-2: hsl(76 65% 51%);
+  --chart-3: hsl(42 93% 56%);
+  --chart-4: hsl(147 78% 42%);
+  --chart-5: hsl(341 75% 51%);
+  --sidebar: hsl(0 0% 7%);
+  --sidebar-foreground: hsl(0 0% 85%);
+  --sidebar-primary: hsl(16 71% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 17%);
+  --sidebar-accent-foreground: hsl(16 71% 48%);
+  --sidebar-border: hsl(0 0% 15%);
+  --sidebar-ring: hsl(16 71% 48%);
+  --font-sans: Inter, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.5rem;
+  
+  /* Dieselpunk colors */
+  --rust: hsl(16 71% 48%);
+  --rust-light: hsl(16 71% 58%);
+  --rust-dark: hsl(16 71% 38%);
+  --brass: hsl(39 55% 65%);
+  --brass-light: hsl(39 55% 75%);
+  --brass-dark: hsl(39 55% 55%);
+  --steel: hsl(0 0% 10%);
+  --steel-light: hsl(0 0% 25%);
+  --steel-lighter: hsl(0 0% 32%);
+  --steel-dark: hsl(0 0% 7%);
+  --toxic: hsl(76 65% 51%);
+  --toxic-light: hsl(76 65% 61%);
+}
+
+.dark {
+  --background: hsl(0 0% 10%);
+  --foreground: hsl(0 0% 91%);
+  --card: hsl(0 0% 7%);
+  --card-foreground: hsl(0 0% 85%);
+  --popover: hsl(0 0% 10%);
+  --popover-foreground: hsl(0 0% 91%);
+  --primary: hsl(16 71% 48%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(0 0% 17%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(0 0% 25%);
+  --muted-foreground: hsl(0 0% 65%);
+  --accent: hsl(16 71% 48%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 25%);
+  --input: hsl(0 0% 17%);
+  --ring: hsl(16 71% 48%);
+  --sidebar: hsl(0 0% 7%);
+  --sidebar-foreground: hsl(0 0% 85%);
+  --sidebar-primary: hsl(16 71% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 17%);
+  --sidebar-accent-foreground: hsl(16 71% 48%);
+  --sidebar-border: hsl(0 0% 15%);
+  --sidebar-ring: hsl(16 71% 48%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+  
+  .metal-panel {
+    background: linear-gradient(135deg, hsl(0 0% 17%) 0%, hsl(0 0% 10%) 100%);
+    border: 1px solid hsl(0 0% 25%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.5);
+  }
+  
+  .rust-glow {
+    box-shadow: 0 0 10px hsla(16, 71%, 48%, 0.3);
+  }
+  
+  .brass-glow {
+    box-shadow: 0 0 10px hsla(39, 55%, 65%, 0.3);
+  }
+  
+  .industrial-button {
+    background: linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 17%) 100%);
+    border: 2px solid hsl(0 0% 32%);
+    transition: all 0.2s ease;
+  }
+  
+  .industrial-button:hover {
+    border-color: hsl(0 0% 45%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  
+  .industrial-button:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: hsl(0 0% 10%);
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 25%);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 32%);
+  }
+}
+
+@layer components {
+  .btn-rust {
+    @apply bg-rust-500 hover:bg-rust-600 text-white border-rust-600;
+  }
+  
+  .btn-brass {
+    @apply bg-brass-500 hover:bg-brass-600 text-steel-800 border-brass-600;
+  }
+  
+  .node-event {
+    @apply fill-rust stroke-rust-dark stroke-2;
+  }
+  
+  .node-npc {
+    @apply fill-brass stroke-brass-dark stroke-2;
+  }
+  
+  .node-faction {
+    @apply fill-red-500 stroke-red-700 stroke-2;
+  }
+  
+  .node-location {
+    @apply fill-toxic stroke-green-700 stroke-2;
+  }
+  
+  .node-item {
+    @apply fill-blue-500 stroke-blue-700 stroke-2;
+  }
+  
+  .connection-line {
+    @apply stroke-steel-lighter stroke-2 opacity-60;
+  }
+}
