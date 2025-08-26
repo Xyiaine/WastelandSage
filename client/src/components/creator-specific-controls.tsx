@@ -23,75 +23,39 @@ interface CreatorSpecificControlsProps {
   sessionId: string | null;
 }
 
-type RoadEventType = 'combat' | 'hazard' | 'discovery' | 'resource';
-type CityEventType = 'politics' | 'trade' | 'conflict' | 'intrigue';
+type RoadEventType = 'combat' | 'hazard' | 'discovery' | 'resource' | 'vehicle' | 'weather' | 'stranger';
+type CityEventType = 'politics' | 'trade' | 'conflict' | 'intrigue' | 'rumors' | 'festival' | 'crisis';
 type ThreatLevel = 'low' | 'medium' | 'high';
-type Environment = 'wasteland' | 'ruins' | 'highway' | 'canyon' | 'settlement' | 'bunker' | 'market' | 'fortress';
+type Environment = 'wasteland' | 'ruins' | 'highway' | 'canyon' | 'settlement' | 'bunker' | 'market' | 'fortress' | 'gasstation' | 'scrapyard' | 'outpost' | 'bridge';
+type TimeOfDay = 'dawn' | 'morning' | 'noon' | 'afternoon' | 'dusk' | 'night';
+type Weather = 'clear' | 'sandstorm' | 'acidrain' | 'fog' | 'radiation';
 
 export function CreatorSpecificControls({ creatorMode, sessionId }: CreatorSpecificControlsProps) {
   const { toast } = useToast();
   const [roadEnvironment, setRoadEnvironment] = useState<Environment>('wasteland');
   const [cityEnvironment, setCityEnvironment] = useState<Environment>('settlement');
   const [threatLevel, setThreatLevel] = useState<ThreatLevel>('medium');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('noon');
+  const [weather, setWeather] = useState<Weather>('clear');
 
   const generateEventMutation = useMutation({
     mutationFn: async (eventType: RoadEventType | CityEventType) => {
       if (!sessionId) throw new Error('No active session');
 
-      const eventTemplates = {
-        // Construction events
-        combat: {
-          name: 'Combat Encounter',
-          description: creatorMode === 'road' 
-            ? `Hostile forces emerge from the ${roadEnvironment}. Players must fight or flee.`
-            : 'Armed conflict breaks out in the settlement.'
-        },
-        hazard: {
-          name: 'Environmental Hazard',
-          description: `Dangerous ${roadEnvironment} conditions threaten the party. Navigation and survival skills required.`
-        },
-        discovery: {
-          name: 'Discovery',
-          description: `The party uncovers something significant in the ${roadEnvironment}. Investigation reveals secrets.`
-        },
-        resource: {
-          name: 'Resource Opportunity',
-          description: `Fuel, supplies, or equipment become available. Players must decide how to acquire them.`
-        },
-        // City events
-        politics: {
-          name: 'Political Maneuvering',
-          description: `Factional tensions rise in the ${cityEnvironment}. Players must navigate competing interests.`
-        },
-        trade: {
-          name: 'Trade Opportunity',
-          description: `Merchants offer valuable exchanges in the ${cityEnvironment}. Negotiation skills important.`
-        },
-        conflict: {
-          name: 'Settlement Conflict',
-          description: `Violence threatens the peace of the ${cityEnvironment}. Players must choose sides or mediate.`
-        },
-        intrigue: {
-          name: 'Intrigue',
-          description: `Hidden agendas and secrets surface in the ${cityEnvironment}. Investigation and social skills needed.`
-        }
+      // Use AI-powered generation instead of simple templates
+      const context = {
+        sessionId,
+        creatorMode,
+        eventType,
+        environment: creatorMode === 'road' ? roadEnvironment : cityEnvironment,
+        threatLevel,
+        timeOfDay,
+        weather
       };
 
-      const template = eventTemplates[eventType];
-      const duration = threatLevel === 'low' ? 20 : threatLevel === 'high' ? 40 : 30;
-
-      const response = await apiRequest('POST', '/api/timeline-events', {
-        sessionId,
-        name: template.name,
-        description: template.description,
-        phase: 'exploration',
-        duration,
-        orderIndex: Date.now(),
-        creatorMode,
-        isCompleted: 'false'
-      });
-      
+      const response = await apiRequest('POST', '/api/generate-event', context);
       return response.json();
+
     },
     onSuccess: (event) => {
       if (sessionId) {
@@ -116,7 +80,7 @@ export function CreatorSpecificControls({ creatorMode, sessionId }: CreatorSpeci
       <div className="metal-panel rounded-lg p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Construction className="h-5 w-5 text-rust-400" />
-          <h2 className="text-xl font-bold text-rust-400">Construction Events</h2>
+          <h2 className="text-xl font-bold text-rust-400">Road Events</h2>
         </div>
         
         <div className="space-y-4">

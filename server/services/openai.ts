@@ -53,28 +53,31 @@ export class AIValidationError extends AIServiceError {
 export interface EventGenerationContext {
   sessionId: string;
   creatorMode: 'road' | 'city';
-  currentPhase: string;
-  aiMode: 'chaos' | 'continuity';
+  currentPhase?: string;
+  aiMode?: 'chaos' | 'continuity';
+  
+  // Event generation parameters
+  eventType?: string;         // e.g., "combat", "politics", "discovery", etc.
   
   // Session history for narrative continuity
-  recentEvents: Array<{
+  recentEvents?: Array<{
     name: string;
     description: string;
     phase: string;
   }>;
   
   // Connected story elements for integration
-  connectedNodes: Array<{
+  connectedNodes?: Array<{
     type: string;
     name: string;
     description: string;
   }>;
   
-  // Optional environmental context
-  environment?: string;        // e.g., "desert wasteland", "ruined city", "underground bunker"
-  threatLevel?: string;        // e.g., "low", "medium", "high", "extreme"
+  // Environmental context
+  environment?: string;        // e.g., "wasteland", "ruins", "settlement"
+  threatLevel?: string;        // e.g., "low", "medium", "high"
   timeOfDay?: string;         // e.g., "dawn", "noon", "dusk", "night"
-  weather?: string;           // e.g., "sandstorm", "acid rain", "clear skies"
+  weather?: string;           // e.g., "sandstorm", "acidrain", "clear"
   playerCount?: number;       // Number of players for scaling
 }
 
@@ -121,22 +124,36 @@ export interface GeneratedEvent {
  * @throws AIValidationError - When response validation fails
  */
 export async function generateEvent(context: EventGenerationContext): Promise<GeneratedEvent> {
-  // Input validation
-  if (!context.sessionId || !context.creatorMode || !context.currentPhase || !context.aiMode) {
-    throw new AIValidationError('Missing required context fields for event generation');
+  // Input validation with defaults
+  if (!context.sessionId || !context.creatorMode) {
+    throw new AIValidationError('Missing required context fields: sessionId and creatorMode');
   }
+  
+  // Set defaults for optional fields
+  const currentPhase = context.currentPhase || 'exploration';
+  const aiMode = context.aiMode || 'continuity';
+  const recentEvents = context.recentEvents || [];
+  const connectedNodes = context.connectedNodes || [];
   
   if (!['road', 'city'].includes(context.creatorMode)) {
     throw new AIValidationError(`Invalid creator mode: ${context.creatorMode}`);
   }
   
-  if (!['chaos', 'continuity'].includes(context.aiMode)) {
+  if (context.aiMode && !['chaos', 'continuity'].includes(context.aiMode)) {
     throw new AIValidationError(`Invalid AI mode: ${context.aiMode}`);
   }
 
-  console.log(`[OpenAI] Generating ${context.creatorMode} event for phase ${context.currentPhase} (${context.aiMode} mode)`);
+  console.log(`[OpenAI] Generating ${context.creatorMode} event for phase ${currentPhase} (${aiMode} mode)${context.eventType ? ` - ${context.eventType}` : ''}`);
   
-  const prompt = createEventPrompt(context);
+  const enhancedContext = {
+    ...context,
+    currentPhase,
+    aiMode,
+    recentEvents,
+    connectedNodes
+  };
+  
+  const prompt = createEventPrompt(enhancedContext);
   
   try {
     const startTime = Date.now();
@@ -146,7 +163,7 @@ export async function generateEvent(context: EventGenerationContext): Promise<Ge
       messages: [
         {
           role: "system",
-          content: getSystemPrompt(context)
+          content: getSystemPrompt(enhancedContext)
         },
         {
           role: "user",
@@ -154,7 +171,7 @@ export async function generateEvent(context: EventGenerationContext): Promise<Ge
         }
       ],
       response_format: { type: "json_object" },
-      temperature: context.aiMode === 'chaos' ? 0.8 : 0.4,
+      temperature: aiMode === 'chaos' ? 0.8 : 0.4,
       max_tokens: 2000, // Ensure sufficient space for detailed responses
     });
 
@@ -240,6 +257,43 @@ function createEventPrompt(context: EventGenerationContext): string {
   const focusType = context.creatorMode === 'road' ? 'survival/action-focused' : 'intrigue/social-focused';
   const aiModeDesc = context.aiMode === 'chaos' ? 'unpredictable, high-action' : 'logical, story-consistent';
   
+  // Enhanced context descriptions for different environments and event types
+  const environmentDescriptions = {
+    // Road environments
+    wasteland: 'endless desolate wasteland with scattered debris and rusted vehicle hulks',
+    ruins: 'crumbling urban ruins with collapsed skyscrapers and overgrown streets',
+    highway: 'broken highway system with twisted overpasses and abandoned checkpoints',
+    canyon: 'rocky canyon networks with hidden caves and ancient petroglyphs',
+    gasstation: 'abandoned gas station with rusted pumps and scavenged parts',
+    scrapyard: 'massive vehicle graveyard with towering heaps of twisted metal',
+    outpost: 'remote military or trading outpost with defensive fortifications',
+    bridge: 'collapsed or damaged bridge spanning dangerous terrain',
+    // City environments
+    settlement: 'makeshift trading settlement built from salvaged materials',
+    bunker: 'underground bunker complex with reinforced corridors',
+    market: 'bustling merchant hub with improvised stalls and traders',
+    fortress: 'heavily fortified compound with armed guards and walls'
+  };
+  
+  const eventTypeGuidelines = {
+    // Road event types
+    combat: 'hostile encounter requiring tactical decisions - raiders, mutants, or territorial gangs',
+    hazard: 'environmental danger testing survival skills - radiation, storms, unstable terrain',
+    discovery: 'uncovering something valuable or mysterious - ruins, caches, or hidden knowledge',
+    resource: 'opportunity to acquire fuel, parts, supplies, or equipment through various means',
+    vehicle: 'vehicle-related encounter - breakdowns, chases, salvage, or mechanical challenges',
+    weather: 'extreme weather event affecting travel - sandstorms, acid rain, radiation clouds',
+    stranger: 'encountering other wasteland travelers with unknown intentions and backstories',
+    // City event types
+    politics: 'factional maneuvering requiring diplomacy - power struggles, alliances, betrayals',
+    trade: 'commercial opportunities or negotiations - rare goods, services, information exchange',
+    conflict: 'settlement disputes requiring mediation - resource conflicts, territorial disputes',
+    intrigue: 'hidden agendas and secrets surfacing - spy networks, conspiracies, hidden motives',
+    rumors: 'information gathering and social interaction - gossip, legends, intelligence networks',
+    festival: 'special celebration or gathering - markets, competitions, cultural events',
+    crisis: 'urgent settlement emergency requiring immediate action - disasters, attacks, system failures'
+  };
+  
   let prompt = `Generate an RPG event for a ${scenarioType} scenario in a dieselpunk post-apocalyptic setting.
 
 **Session Context:**
@@ -270,29 +324,34 @@ function createEventPrompt(context: EventGenerationContext): string {
   }
 
   // Include recent events for continuity
-  if (context.recentEvents.length > 0) {
+  const recentEvents = context.recentEvents || [];
+  if (recentEvents.length > 0) {
     prompt += `\n\n**Recent Session Events (for continuity):**`;
-    context.recentEvents.slice(-3).forEach((event, i) => { // Limit to last 3 events
+    recentEvents.slice(-3).forEach((event, i) => { // Limit to last 3 events
       prompt += `\n${i + 1}. "${event.name}" (${event.phase}): ${event.description.substring(0, 200)}${event.description.length > 200 ? '...' : ''}`;
     });
   }
 
   // Include connected story elements
-  if (context.connectedNodes.length > 0) {
+  const connectedNodes = context.connectedNodes || [];
+  if (connectedNodes.length > 0) {
     prompt += `\n\n**Existing Story Elements (consider connections):**`;
-    context.connectedNodes.slice(0, 5).forEach(node => { // Limit to 5 nodes
+    connectedNodes.slice(0, 5).forEach(node => { // Limit to 5 nodes
       prompt += `\n- ${node.type.toUpperCase()}: "${node.name}" - ${node.description.substring(0, 150)}${node.description.length > 150 ? '...' : ''}`;
     });
   }
 
   // Generation requirements
   prompt += `\n\n**Generate a ${focusType} event that:**
-1. Fits naturally into the current narrative context
-2. Creates meaningful player choices with consequences
+1. Fits naturally into the current narrative context and chosen environment
+2. Creates meaningful player choices with consequences and multiple resolution paths
 3. Can connect to existing story elements when appropriate
 4. Maintains strong dieselpunk aesthetic (rust, metal, scavenged tech, survival themes)
-5. Is appropriate for the current session phase
-6. Provides clear GM guidance for execution
+5. Is appropriate for the current session phase and threat level
+6. Provides clear GM guidance for execution with specific details
+7. Incorporates environmental details: ${context.environment ? (environmentDescriptions as any)[context.environment] || context.environment : 'appropriate setting'}
+8. Follows event type guidelines: ${context.eventType ? (eventTypeGuidelines as any)[context.eventType] || 'general encounter' : 'contextual encounter'}
+9. Considers time and weather: ${context.timeOfDay || 'any time'} with ${context.weather || 'normal'} conditions
 
 **Required JSON Response Format:**
 \`\`\`json
