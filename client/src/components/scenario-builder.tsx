@@ -282,16 +282,16 @@ export function ScenarioBuilder() {
       errors.push('Main idea is required');
     } else if (scenarioForm.mainIdea.length < 10) {
       errors.push('Main idea must be at least 10 characters');
-    } else if (scenarioForm.mainIdea.length > 2000) {
-      errors.push('Main idea must be under 2000 characters');
+    } else if (scenarioForm.mainIdea.length > 10000) {
+      errors.push('Main idea must be under 10000 characters');
     }
     
-    if (scenarioForm.worldContext && scenarioForm.worldContext.length > 5000) {
-      errors.push('World context must be under 5000 characters');
+    if (scenarioForm.worldContext && scenarioForm.worldContext.length > 10000) {
+      errors.push('World context must be under 10000 characters');
     }
     
-    if (scenarioForm.politicalSituation && scenarioForm.politicalSituation.length > 3000) {
-      errors.push('Political situation must be under 3000 characters');
+    if (scenarioForm.politicalSituation && scenarioForm.politicalSituation.length > 10000) {
+      errors.push('Political situation must be under 10000 characters');
     }
     
     return errors;
@@ -429,7 +429,7 @@ export function ScenarioBuilder() {
                       onClick={() => setCurrentScenario(scenario)}
                     >
                       <h3 className="font-semibold text-white mb-1">{scenario.title}</h3>
-                      <p className="text-sm text-slate-300 mb-2 line-clamp-2">{scenario.mainIdea}</p>
+                      <p className="text-sm text-slate-300 mb-2 line-clamp-3 whitespace-pre-wrap leading-relaxed">{scenario.mainIdea}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant={scenario.status === 'active' ? 'default' : 'secondary'} className="text-xs">
                           {scenario.status}
@@ -465,7 +465,7 @@ export function ScenarioBuilder() {
                       {currentScenario.status}
                     </Badge>
                   </CardTitle>
-                  <CardDescription className="text-slate-300">
+                  <CardDescription className="text-slate-300 whitespace-pre-wrap leading-relaxed">
                     {currentScenario.mainIdea}
                   </CardDescription>
                 </CardHeader>
@@ -483,7 +483,7 @@ export function ScenarioBuilder() {
                         {currentScenario.worldContext && (
                           <div>
                             <h3 className="text-lg font-semibold text-white mb-2">World Context</h3>
-                            <p className="text-slate-300 bg-slate-700/50 p-4 rounded-lg">
+                            <p className="text-slate-300 bg-slate-700/50 p-4 rounded-lg whitespace-pre-wrap leading-relaxed">
                               {currentScenario.worldContext}
                             </p>
                           </div>
@@ -493,7 +493,7 @@ export function ScenarioBuilder() {
                         {currentScenario.politicalSituation && (
                           <div>
                             <h3 className="text-lg font-semibold text-white mb-2">Political Situation</h3>
-                            <p className="text-slate-300 bg-slate-700/50 p-4 rounded-lg">
+                            <p className="text-slate-300 bg-slate-700/50 p-4 rounded-lg whitespace-pre-wrap leading-relaxed">
                               {currentScenario.politicalSituation}
                             </p>
                           </div>
@@ -703,13 +703,13 @@ export function ScenarioBuilder() {
                     value={scenarioForm.mainIdea}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, mainIdea: e.target.value }))}
                     placeholder="Describe the core concept and central themes (minimum 10 characters)..."
-                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                    className={`bg-slate-700 border-slate-600 text-white h-32 ${
                       scenarioForm.mainIdea.length < 10 && scenarioForm.mainIdea.length > 0 ? 'border-yellow-500' :
-                      scenarioForm.mainIdea.length > 2000 ? 'border-red-500' : ''
+                      scenarioForm.mainIdea.length > 10000 ? 'border-red-500' : ''
                     }`}
                   />
                   <div className="text-xs text-slate-400 mt-1">
-                    {scenarioForm.mainIdea.length}/2000 characters
+                    {scenarioForm.mainIdea.length}/10000 characters
                     {scenarioForm.mainIdea.length < 10 && (
                       <span className="text-yellow-400 ml-2">
                         (minimum 10 characters required)
@@ -725,12 +725,12 @@ export function ScenarioBuilder() {
                     value={scenarioForm.worldContext}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, worldContext: e.target.value }))}
                     placeholder="Background setting information..."
-                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
-                      (scenarioForm.worldContext?.length || 0) > 5000 ? 'border-red-500' : ''
+                    className={`bg-slate-700 border-slate-600 text-white h-32 ${
+                      (scenarioForm.worldContext?.length || 0) > 10000 ? 'border-red-500' : ''
                     }`}
                   />
                   <div className="text-xs text-slate-400 mt-1">
-                    {scenarioForm.worldContext?.length || 0}/5000 characters
+                    {scenarioForm.worldContext?.length || 0}/10000 characters
                   </div>
                 </div>
                 
@@ -741,12 +741,12 @@ export function ScenarioBuilder() {
                     value={scenarioForm.politicalSituation}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, politicalSituation: e.target.value }))}
                     placeholder="Current political climate and tensions..."
-                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
-                      (scenarioForm.politicalSituation?.length || 0) > 3000 ? 'border-red-500' : ''
+                    className={`bg-slate-700 border-slate-600 text-white h-32 ${
+                      (scenarioForm.politicalSituation?.length || 0) > 10000 ? 'border-red-500' : ''
                     }`}
                   />
                   <div className="text-xs text-slate-400 mt-1">
-                    {scenarioForm.politicalSituation?.length || 0}/3000 characters
+                    {scenarioForm.politicalSituation?.length || 0}/10000 characters
                   </div>
                 </div>
                 

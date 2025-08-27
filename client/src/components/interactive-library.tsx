@@ -321,7 +321,7 @@ export function InteractiveLibrary({ showTitle = true }: InteractiveLibraryProps
                           </Link>
                         </div>
                       </div>
-                      <p className="text-slate-300 text-sm mb-3 line-clamp-2">
+                      <p className="text-slate-300 text-sm mb-3 line-clamp-3 whitespace-pre-wrap leading-relaxed">
                         {scenario.mainIdea}
                       </p>
                       {scenario.keyThemes && scenario.keyThemes.length > 0 && (
