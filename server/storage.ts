@@ -883,7 +883,10 @@ export class MemStorage implements IStorage {
 
   async getUserScenarios(userId: string): Promise<Scenario[]> {
     try {
-      this.validateId(userId, 'getUserScenarios');
+      // For demo-user, be more flexible with validation
+      if (userId !== 'demo-user') {
+        this.validateId(userId, 'getUserScenarios');
+      }
       
       const scenarios = Array.from(this.scenarios.values()).filter(
         scenario => scenario.userId === userId
@@ -908,8 +911,23 @@ export class MemStorage implements IStorage {
         throw new ValidationError('Main idea is required');
       }
 
-      // Validate user exists if provided
-      if (insertScenario.userId) {
+      // For demo purposes, create a default user if needed
+      if (insertScenario.userId === 'demo-user') {
+        // Create demo user if it doesn't exist
+        try {
+          await this.getUser('demo-user');
+        } catch (error) {
+          // Create demo user
+          const demoUser = {
+            id: 'demo-user',
+            username: 'demo',
+            password: 'demo-password'
+          };
+          this.users.set('demo-user', demoUser);
+          console.log('[MemStorage] Created demo user');
+        }
+      } else if (insertScenario.userId) {
+        // Validate other users exist
         const user = await this.getUser(insertScenario.userId);
         if (!user) {
           throw new ReferentialIntegrityError(`User '${insertScenario.userId}' does not exist`);

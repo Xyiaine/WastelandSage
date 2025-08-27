@@ -526,6 +526,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export scenarios to Excel (must be before :id route)
+  app.get("/api/scenarios/export", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      const { userId } = req.query;
+      console.log(`[API] Exporting scenarios for user: ${userId || 'all'}`);
+      
+      // Fetch all scenarios for the user (or all if no userId)
+      const scenarios = await storage.getUserScenarios(userId as string || 'demo-user');
+      
+      // Fetch all regions for these scenarios
+      const allRegions = [];
+      for (const scenario of scenarios) {
+        const regions = await storage.getScenarioRegions(scenario.id);
+        allRegions.push(...regions);
+      }
+      
+      // Generate Excel file
+      const excelBuffer = exportScenariosToExcel(scenarios, allRegions);
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
+      
+      logRequest('GET', '/api/scenarios/export', startTime, 200, `Exported ${scenarios.length} scenarios, ${allRegions.length} regions`);
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', '/api/scenarios/export', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
   // Get single scenario
   app.get("/api/scenarios/:id", async (req, res) => {
     const startTime = Date.now();
@@ -835,42 +872,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export scenarios to Excel
-  app.get("/api/scenarios/export", async (req, res) => {
-    const startTime = Date.now();
-    
-    try {
-      const { userId } = req.query;
-      console.log(`[API] Exporting scenarios for user: ${userId || 'all'}`);
-      
-      // Fetch all scenarios for the user (or all if no userId)
-      const scenarios = await storage.getUserScenarios(userId as string || 'demo-user');
-      
-      // Fetch all regions for these scenarios
-      const allRegions = [];
-      for (const scenario of scenarios) {
-        const regions = await storage.getScenarioRegions(scenario.id);
-        allRegions.push(...regions);
-      }
-      
-      // Generate Excel file
-      const excelBuffer = exportScenariosToExcel(scenarios, allRegions);
-      
-      // Set headers for file download
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
-      
-      logRequest('GET', '/api/scenarios/export', startTime, 200, `Exported ${scenarios.length} scenarios, ${allRegions.length} regions`);
-      res.send(excelBuffer);
-      
-    } catch (error) {
-      const statusCode = getErrorStatusCode(error as Error);
-      const errorResponse = formatErrorResponse(error as Error);
-      
-      logRequest('GET', '/api/scenarios/export', startTime, statusCode, `Error: ${errorResponse.error}`);
-      res.status(statusCode).json(errorResponse);
-    }
-  });
 
   // Import scenarios from Excel
   app.post("/api/scenarios/import", upload.single('file'), async (req, res) => {
@@ -905,7 +906,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const scenario = await storage.createScenario({
             ...scenarioData,
-            status: scenarioData.status || 'draft',
+            status: (scenarioData.status as 'draft' | 'active' | 'completed' | 'archived') || 'draft',
+            keyThemes: Array.isArray(scenarioData.keyThemes) ? scenarioData.keyThemes : [],
             userId: req.body.userId || 'demo-user'
           });
           importedScenarios.push(scenario);
@@ -932,6 +934,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const region = await storage.createRegion({
             ...regionData,
             type: regionData.type as 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub',
+            description: regionData.description || undefined,
+            controllingFaction: regionData.controllingFaction || undefined,
+            population: regionData.population || undefined,
+            resources: Array.isArray(regionData.resources) ? regionData.resources : undefined,
+            threatLevel: regionData.threatLevel || 1,
+            politicalStance: (regionData.politicalStance as 'hostile' | 'neutral' | 'friendly' | 'allied') || undefined,
+            tradeRoutes: Array.isArray(regionData.tradeRoutes) ? regionData.tradeRoutes : undefined,
             scenarioId
           });
           importedRegions.push(region);
