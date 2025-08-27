@@ -210,6 +210,23 @@ export default function Dashboard() {
               </Button>
             </Link>
             
+            {/* Quick Export Button */}
+            <Button 
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = '/api/scenarios/export?userId=demo-user';
+                link.download = `scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
+              data-testid="button-quick-export"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export Scenarios
+            </Button>
+            
             {/* Export Button */}
             <Button 
               onClick={handleExportSession}

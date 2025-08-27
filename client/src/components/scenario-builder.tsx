@@ -28,6 +28,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription } from './ui/alert';
 import { Plus, Save, Trash2, Edit3, MapPin, Users, Shield, Coins, AlertTriangle } from 'lucide-react';
 import { InteractiveLibrary } from './interactive-library';
+import { ImportExportControls } from './import-export-controls';
 
 // Types for scenario management
 interface Scenario {
@@ -581,6 +582,22 @@ export function ScenarioBuilder() {
                     
                     <TabsContent value="library" className="mt-6">
                       <InteractiveLibrary showTitle={false} />
+                    </TabsContent>
+                    
+                    <TabsContent value="import-export" className="mt-6">
+                      <ImportExportControls
+                        onImportComplete={(result) => {
+                          console.log('Import completed:', result);
+                          // Refresh scenarios after import
+                          fetchScenarios();
+                          if (currentScenario) {
+                            fetchRegions(currentScenario.id);
+                          }
+                        }}
+                        onExportComplete={() => {
+                          console.log('Export completed successfully');
+                        }}
+                      />
                     </TabsContent>
                   </Tabs>
                 </CardContent>

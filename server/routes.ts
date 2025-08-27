@@ -21,7 +21,9 @@ import { createServer, type Server } from "http";
 import { storage, StorageError, NotFoundError, ValidationError, ReferentialIntegrityError } from "./storage";
 import { insertSessionSchema, insertNodeSchema, insertConnectionSchema, insertTimelineEventSchema, insertScenarioSchema, insertRegionSchema, insertScenarioSessionSchema } from "@shared/schema";
 import { generateEvent, generateNPC, type EventGenerationContext, type NPCGenerationContext, AIServiceError } from "./services/openai";
+import { exportScenariosToExcel, importScenariosFromExcel, validateImportedData } from "./services/excel";
 import { ZodError } from "zod";
+import multer from "multer";
 
 /**
  * Enhanced logging utility for requests
@@ -815,6 +817,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * IMPORT/EXPORT ENDPOINTS
+   * Excel file operations for scenarios and regions
+   */
+
+  // Configure multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          file.mimetype === 'application/vnd.ms-excel') {
+        cb(null, true);
+      } else {
+        cb(new Error('Only Excel files are allowed'));
+      }
+    }
+  });
+
+  // Export scenarios to Excel
+  app.get("/api/scenarios/export", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      const { userId } = req.query;
+      console.log(`[API] Exporting scenarios for user: ${userId || 'all'}`);
+      
+      // Fetch all scenarios for the user (or all if no userId)
+      const scenarios = await storage.getUserScenarios(userId as string || 'demo-user');
+      
+      // Fetch all regions for these scenarios
+      const allRegions = [];
+      for (const scenario of scenarios) {
+        const regions = await storage.getScenarioRegions(scenario.id);
+        allRegions.push(...regions);
+      }
+      
+      // Generate Excel file
+      const excelBuffer = exportScenariosToExcel(scenarios, allRegions);
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
+      
+      logRequest('GET', '/api/scenarios/export', startTime, 200, `Exported ${scenarios.length} scenarios, ${allRegions.length} regions`);
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', '/api/scenarios/export', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Import scenarios from Excel
+  app.post("/api/scenarios/import", upload.single('file'), async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      if (!req.file) {
+        throw new ValidationError('No file uploaded');
+      }
+      
+      console.log(`[API] Importing scenarios from file: ${req.file.originalname}`);
+      
+      // Parse Excel file
+      const importedData = importScenariosFromExcel(req.file.buffer);
+      
+      // Validate imported data
+      const validation = validateImportedData(importedData);
+      if (!validation.isValid) {
+        logRequest('POST', '/api/scenarios/import', startTime, 400, `Validation failed: ${validation.errors.length} errors`);
+        return res.status(400).json({
+          error: 'Import validation failed',
+          code: 'VALIDATION_ERROR',
+          details: validation.errors
+        });
+      }
+      
+      // Import scenarios
+      const importedScenarios = [];
+      const scenarioIdMap = new Map<string, string>(); // old ID -> new ID mapping
+      
+      for (const scenarioData of importedData.scenarios) {
+        try {
+          const scenario = await storage.createScenario({
+            ...scenarioData,
+            status: scenarioData.status || 'draft',
+            userId: req.body.userId || 'demo-user'
+          });
+          importedScenarios.push(scenario);
+          
+          // For regions that reference scenario IDs, we need to map them
+          const originalId = scenarioData.title; // Use title as temporary mapping
+          scenarioIdMap.set(originalId, scenario.id);
+        } catch (error) {
+          console.warn(`Failed to import scenario: ${scenarioData.title}`, error);
+        }
+      }
+      
+      // Import regions
+      const importedRegions = [];
+      for (const regionData of importedData.regions) {
+        try {
+          // Find matching scenario for this region
+          let scenarioId = regionData.scenarioId;
+          if (!scenarioId && importedScenarios.length > 0) {
+            // If no scenario ID specified, assign to first imported scenario
+            scenarioId = importedScenarios[0].id;
+          }
+          
+          const region = await storage.createRegion({
+            ...regionData,
+            type: regionData.type as 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub',
+            scenarioId
+          });
+          importedRegions.push(region);
+        } catch (error) {
+          console.warn(`Failed to import region: ${regionData.name}`, error);
+        }
+      }
+      
+      logRequest('POST', '/api/scenarios/import', startTime, 201, `Imported ${importedScenarios.length} scenarios, ${importedRegions.length} regions`);
+      res.status(201).json({
+        success: true,
+        imported: {
+          scenarios: importedScenarios.length,
+          regions: importedRegions.length
+        },
+        scenarios: importedScenarios,
+        regions: importedRegions
+      });
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('POST', '/api/scenarios/import', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
    * UTILITY AND MONITORING ENDPOINTS
    * Health checks and system information
    */
@@ -892,6 +1038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('  - GET    /api/scenarios/:scenarioId/sessions');
   console.log('  - POST   /api/scenarios/:scenarioId/sessions/:sessionId/link');
   console.log('  - DELETE /api/scenarios/:scenarioId/sessions/:sessionId/link');
+  console.log('  - GET    /api/scenarios/export');
+  console.log('  - POST   /api/scenarios/import');
   console.log('  - GET    /api/health');
   
   return httpServer;
