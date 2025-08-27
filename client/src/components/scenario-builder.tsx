@@ -26,7 +26,7 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription } from './ui/alert';
-import { Plus, Save, Trash2, Edit3, MapPin, Users, Shield, Coins, AlertTriangle } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Edit, MapPin, Users, Shield, Coins, AlertTriangle } from 'lucide-react';
 import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
 
@@ -139,6 +139,7 @@ export function ScenarioBuilder() {
   });
   
   const [showCreateScenario, setShowCreateScenario] = useState(false);
+  const [showEditScenario, setShowEditScenario] = useState(false);
   const [showCreateRegion, setShowCreateRegion] = useState(false);
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
 
@@ -164,6 +165,18 @@ export function ScenarioBuilder() {
       if (!response.ok) throw new Error('Failed to fetch regions');
       const data = await response.json();
       setRegions(data);
+      
+      // Auto-generate regions if none exist
+      if (data.length === 0) {
+        console.log('No regions found, generating default regions based on lore...');
+        await generateDefaultRegions(scenarioId);
+        // Fetch regions again to display the newly created ones
+        const newResponse = await fetch(`/api/scenarios/${scenarioId}/regions`);
+        if (newResponse.ok) {
+          const newData = await newResponse.json();
+          setRegions(newData);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch regions');
     }
@@ -197,6 +210,39 @@ export function ScenarioBuilder() {
       resetScenarioForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create scenario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateScenario = async (scenarioId: string, data: CreateScenarioData) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/scenarios/${scenarioId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.details && Array.isArray(errorData.details)) {
+          // Format Zod validation errors
+          const validationErrors = errorData.details.map((detail: any) => 
+            `${detail.path.join('.')}: ${detail.message}`
+          ).join(', ');
+          throw new Error(`Validation failed: ${validationErrors}`);
+        }
+        throw new Error(errorData.error || 'Failed to update scenario');
+      }
+      
+      const updatedScenario = await response.json();
+      setScenarios(prev => prev.map(s => s.id === scenarioId ? updatedScenario : s));
+      setCurrentScenario(updatedScenario);
+      setShowEditScenario(false);
+      resetScenarioForm();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update scenario');
     } finally {
       setLoading(false);
     }
@@ -299,6 +345,133 @@ export function ScenarioBuilder() {
 
   const isFormValid = () => {
     return validateScenarioForm().length === 0;
+  };
+
+  // Function to populate form with scenario data for editing
+  const populateEditForm = (scenario: Scenario) => {
+    setScenarioForm({
+      title: scenario.title,
+      mainIdea: scenario.mainIdea,
+      worldContext: scenario.worldContext || '',
+      politicalSituation: scenario.politicalSituation || '',
+      keyThemes: scenario.keyThemes || [],
+      status: scenario.status
+    });
+  };
+
+  // Automatic region generation based on lore
+  const generateDefaultRegions = async (scenarioId: string) => {
+    const defaultRegions = [
+      {
+        name: "Cité Médicale",
+        type: "city" as const,
+        description: "« Les Blouses Blanches » - Spécialité : médicaments, chirurgie, prothèses, vaccins. Indispensable pour soigner blessures, maladies et radiations. Dirigée par un conseil de docteurs et apothicaires autoritaires.",
+        controllingFaction: "Les Blouses Blanches",
+        population: 15000,
+        resources: ["medicine", "technology"],
+        threatLevel: 2,
+        politicalStance: "neutral" as const
+      },
+      {
+        name: "Cité du Carburant",
+        type: "industrial" as const,
+        description: "« Les Raffineurs » - Spécialité : mazout, carburant synthétique, huiles. Contrôle les convois motorisés. Leurs raffineries sont aussi des forteresses mobiles.",
+        controllingFaction: "Les Raffineurs",
+        population: 12000,
+        resources: ["fuel", "technology"],
+        threatLevel: 3,
+        politicalStance: "hostile" as const
+      },
+      {
+        name: "Cité Industrielle",
+        type: "industrial" as const,
+        description: "« Les Forgerons d'Acier » - Spécialité : machines, pièces détachées, mécanique lourde. Maîtrise la production de véhicules et générateurs. Usines colossales, villes entières noyées dans la fumée.",
+        controllingFaction: "Les Forgerons d'Acier",
+        population: 25000,
+        resources: ["metal", "technology", "energy"],
+        threatLevel: 2,
+        politicalStance: "neutral" as const
+      },
+      {
+        name: "Cité de l'Eau & Alimentation",
+        type: "fortress" as const,
+        description: "« Les Gardiens de la Source » - Spécialité : serres blindées, puits, élevages, semences rares. Nourriture et eau = pouvoir vital. Fortifications autour de vastes réservoirs souterrains.",
+        controllingFaction: "Les Gardiens de la Source",
+        population: 18000,
+        resources: ["food", "water"],
+        threatLevel: 4,
+        politicalStance: "friendly" as const
+      },
+      {
+        name: "Cité du Divertissement",
+        type: "trade_hub" as const,
+        description: "« Les Faiseurs de Rêves » - Spécialité : arènes, spectacles, cinéma, propagande. Influence culturelle et morale énorme. Connue pour ses radios et journaux de masse.",
+        controllingFaction: "Les Faiseurs de Rêves",
+        population: 20000,
+        resources: ["information"],
+        threatLevel: 1,
+        politicalStance: "neutral" as const
+      },
+      {
+        name: "Nuke City",
+        type: "city" as const,
+        description: "« Le Réacteur à Ciel Ouvert » - Unique cité nucléaire de surface. Énergie colossale, défenses électrifiées, armes avancées. Ville lumineuse dans le désert, crainte de tous.",
+        controllingFaction: "Le Réacteur à Ciel Ouvert",
+        population: 8000,
+        resources: ["fuel", "technology", "weapons"],
+        threatLevel: 5,
+        politicalStance: "hostile" as const
+      },
+      {
+        name: "Cité des Métaux & Recyclage",
+        type: "industrial" as const,
+        description: "« Les Fossoyeurs » - Spécialité : récupération dans les ruines, fonderies, mines. Fournit tous les métaux et alliages rares. Cité construite dans un cimetière de gratte-ciels effondrés.",
+        controllingFaction: "Les Fossoyeurs",
+        population: 10000,
+        resources: ["metal"],
+        threatLevel: 3,
+        politicalStance: "neutral" as const
+      },
+      {
+        name: "Cité de l'Armement & Défense",
+        type: "fortress" as const,
+        description: "« Les Arsenaux » - Spécialité : armes à feu, explosifs, blindages, véhicules de guerre. Puissance militaire écrasante. La cité est un gigantesque complexe militaire.",
+        controllingFaction: "Les Arsenaux",
+        population: 22000,
+        resources: ["weapons", "metal", "technology"],
+        threatLevel: 5,
+        politicalStance: "hostile" as const
+      },
+      {
+        name: "L'Île des Anciens",
+        type: "city" as const,
+        description: "« Le Paradis Perdu » - Technologie pré-apocalyptique intacte, agriculture abondante. Autosuffisante, riche, civilisée. Certains doutent même qu'elle existe vraiment.",
+        controllingFaction: "Le Paradis Perdu",
+        population: 5000,
+        resources: ["technology", "food"],
+        threatLevel: 1,
+        politicalStance: "neutral" as const
+      },
+      {
+        name: "Bunker Oméga",
+        type: "fortress" as const,
+        description: "« Les Fantômes d'Acier » - Cité souterraine ultra-avancée, énergie nucléaire. Technologie la plus avancée du monde (armes, drones, IA rudimentaires). N'intervient pas officiellement, mais manipule la surface via espions et agents secrets.",
+        controllingFaction: "Les Fantômes d'Acier",
+        population: 3000,
+        resources: ["technology", "fuel", "information"],
+        threatLevel: 5,
+        politicalStance: "hostile" as const
+      }
+    ];
+
+    try {
+      for (const regionData of defaultRegions) {
+        await createRegion({ ...regionData, scenarioId });
+      }
+      console.log(`Generated ${defaultRegions.length} default regions for scenario ${scenarioId}`);
+    } catch (error) {
+      console.error('Failed to generate default regions:', error);
+    }
   };
 
   const resetRegionForm = () => {
@@ -460,10 +633,24 @@ export function ScenarioBuilder() {
               <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center justify-between">
-                    {currentScenario.title}
-                    <Badge variant={currentScenario.status === 'active' ? 'default' : 'secondary'}>
-                      {currentScenario.status}
-                    </Badge>
+                    <span>{currentScenario.title}</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          populateEditForm(currentScenario);
+                          setShowEditScenario(true);
+                        }}
+                        className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Badge variant={currentScenario.status === 'active' ? 'default' : 'secondary'}>
+                        {currentScenario.status}
+                      </Badge>
+                    </div>
                   </CardTitle>
                   <CardDescription className="text-slate-300 whitespace-pre-wrap leading-relaxed">
                     {currentScenario.mainIdea}
@@ -805,6 +992,175 @@ export function ScenarioBuilder() {
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {loading ? 'Creating...' : 'Create Scenario'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Edit Scenario Modal */}
+        {showEditScenario && currentScenario && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white">Edit Scenario</CardTitle>
+                <CardDescription className="text-slate-300">
+                  Update your story concept and world-building elements
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title" className="text-white">Title *</Label>
+                  <Input
+                    id="edit-title"
+                    value={scenarioForm.title}
+                    onChange={(e) => setScenarioForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter scenario title..."
+                    className={`bg-slate-700 border-slate-600 text-white ${
+                      scenarioForm.title.length > 200 ? 'border-red-500' : ''
+                    }`}
+                  />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.title.length}/200 characters
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-mainIdea" className="text-white">Main Idea *</Label>
+                  <Textarea
+                    id="edit-mainIdea"
+                    value={scenarioForm.mainIdea}
+                    onChange={(e) => setScenarioForm(prev => ({ ...prev, mainIdea: e.target.value }))}
+                    placeholder="Describe the core concept and central themes (minimum 10 characters)..."
+                    className={`bg-slate-700 border-slate-600 text-white h-32 ${
+                      scenarioForm.mainIdea.length < 10 && scenarioForm.mainIdea.length > 0 ? 'border-yellow-500' :
+                      scenarioForm.mainIdea.length > 10000 ? 'border-red-500' : ''
+                    }`}
+                  />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.mainIdea.length}/10000 characters
+                    {scenarioForm.mainIdea.length < 10 && (
+                      <span className="text-yellow-400 ml-2">
+                        (minimum 10 characters required)
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-worldContext" className="text-white">World Context</Label>
+                  <Textarea
+                    id="edit-worldContext"
+                    value={scenarioForm.worldContext}
+                    onChange={(e) => setScenarioForm(prev => ({ ...prev, worldContext: e.target.value }))}
+                    placeholder="Detail the setting, geography, and environmental conditions..."
+                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                      scenarioForm.worldContext.length > 10000 ? 'border-red-500' : ''
+                    }`}
+                  />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.worldContext.length}/10000 characters
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-politicalSituation" className="text-white">Political Situation</Label>
+                  <Textarea
+                    id="edit-politicalSituation"
+                    value={scenarioForm.politicalSituation}
+                    onChange={(e) => setScenarioForm(prev => ({ ...prev, politicalSituation: e.target.value }))}
+                    placeholder="Describe the power dynamics, conflicts, and alliances..."
+                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                      scenarioForm.politicalSituation.length > 10000 ? 'border-red-500' : ''
+                    }`}
+                  />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.politicalSituation.length}/10000 characters
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-white">Key Themes</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {[
+                      'Survival', 'Resource Scarcity', 'Technology vs Nature',
+                      'Social Hierarchy', 'Redemption', 'Exploration',
+                      'Power Struggle', 'Community Building', 'Trade & Economics',
+                      'Environmental Hazards', 'Mutants & Radiation', 'Lost Knowledge'
+                    ].map((theme) => (
+                      <Button
+                        key={theme}
+                        variant={scenarioForm.keyThemes?.includes(theme) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleThemeToggle(theme)}
+                        className={scenarioForm.keyThemes?.includes(theme) 
+                          ? "bg-orange-600 hover:bg-orange-700" 
+                          : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                        }
+                      >
+                        {theme}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-status" className="text-white">Status</Label>
+                  <Select 
+                    value={scenarioForm.status} 
+                    onValueChange={(value: 'draft' | 'active' | 'completed' | 'archived') => 
+                      setScenarioForm(prev => ({ ...prev, status: value }))
+                    }
+                  >
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-700 border-slate-600">
+                      <SelectItem value="draft" className="text-white">Draft</SelectItem>
+                      <SelectItem value="active" className="text-white">Active</SelectItem>
+                      <SelectItem value="completed" className="text-white">Completed</SelectItem>
+                      <SelectItem value="archived" className="text-white">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Validation Errors */}
+                {(() => {
+                  const errors = validateScenarioForm();
+                  return errors.length > 0 && (
+                    <div className="bg-red-900/20 border border-red-400 rounded p-3">
+                      <div className="text-red-400 text-sm font-medium mb-2">Please fix the following issues:</div>
+                      <ul className="text-red-300 text-sm space-y-1">
+                        {errors.map((error, index) => (
+                          <li key={index} className="flex items-center">
+                            <span className="mr-2">•</span>
+                            {error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+                
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowEditScenario(false);
+                      resetScenarioForm();
+                    }}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => updateScenario(currentScenario.id, scenarioForm)}
+                    disabled={!isFormValid() || loading}
+                    className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? 'Updating...' : 'Update Scenario'}
                   </Button>
                 </div>
               </CardContent>
