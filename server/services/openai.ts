@@ -73,6 +73,23 @@ export interface EventGenerationContext {
     description: string;
   }>;
   
+  // Scenario context for world-aware generation
+  scenarioContext?: {
+    title: string;
+    mainIdea: string;
+    worldContext?: string;
+    politicalSituation?: string;
+    keyThemes?: string[];
+    availableRegions?: Array<{
+      name: string;
+      type: 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub';
+      controllingFaction?: string;
+      threatLevel: number;
+      politicalStance?: 'hostile' | 'neutral' | 'friendly' | 'allied';
+      resources?: string[];
+    }>;
+  };
+  
   // Environmental context
   environment?: string;        // e.g., "wasteland", "ruins", "settlement"
   threatLevel?: string;        // e.g., "low", "medium", "high"

@@ -19,7 +19,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, StorageError, NotFoundError, ValidationError, ReferentialIntegrityError } from "./storage";
-import { insertSessionSchema, insertNodeSchema, insertConnectionSchema, insertTimelineEventSchema } from "@shared/schema";
+import { insertSessionSchema, insertNodeSchema, insertConnectionSchema, insertTimelineEventSchema, insertScenarioSchema, insertRegionSchema, insertScenarioSessionSchema } from "@shared/schema";
 import { generateEvent, generateNPC, type EventGenerationContext, type NPCGenerationContext, AIServiceError } from "./services/openai";
 import { ZodError } from "zod";
 
@@ -496,6 +496,325 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * SCENARIO MANAGEMENT ENDPOINTS
+   * High-level scenario and world-building operations
+   */
+
+  // Get all scenarios for a user
+  app.get("/api/scenarios", async (req, res) => {
+    const startTime = Date.now();
+    const userId = req.query.userId as string;
+    
+    try {
+      if (!userId) {
+        return res.status(400).json({ error: "userId query parameter is required", code: 'MISSING_PARAMETER' });
+      }
+
+      const scenarios = await storage.getUserScenarios(userId);
+      
+      logRequest('GET', '/api/scenarios', startTime, 200, `Retrieved ${scenarios.length} scenarios for user ${userId}`);
+      res.json(scenarios);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', '/api/scenarios', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Get single scenario
+  app.get("/api/scenarios/:id", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.id;
+    
+    try {
+      const scenario = await storage.getScenario(scenarioId);
+      if (!scenario) {
+        logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, 404, 'Scenario not found');
+        return res.status(404).json({ error: "Scenario not found", code: 'NOT_FOUND' });
+      }
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, 200, `Retrieved: ${scenario.title}`);
+      res.json(scenario);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create new scenario
+  app.post("/api/scenarios", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      console.log(`[API] Creating scenario: ${JSON.stringify(req.body, null, 2)}`);
+      
+      const data = insertScenarioSchema.parse(req.body);
+      const scenario = await storage.createScenario(data);
+      
+      logRequest('POST', '/api/scenarios', startTime, 201, `Created scenario: ${scenario.title}`);
+      res.status(201).json(scenario);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('POST', '/api/scenarios', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Update scenario
+  app.patch("/api/scenarios/:id", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.id;
+    
+    try {
+      console.log(`[API] Updating scenario ${scenarioId}: ${JSON.stringify(req.body, null, 2)}`);
+      
+      const scenario = await storage.updateScenario(scenarioId, req.body);
+      
+      logRequest('PATCH', `/api/scenarios/${scenarioId}`, startTime, 200, `Updated: ${scenario.title}`);
+      res.json(scenario);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('PATCH', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Delete scenario
+  app.delete("/api/scenarios/:id", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.id;
+    
+    try {
+      await storage.deleteScenario(scenarioId);
+      
+      logRequest('DELETE', `/api/scenarios/${scenarioId}`, startTime, 204, 'Scenario deleted');
+      res.status(204).send();
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('DELETE', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
+   * REGION MANAGEMENT ENDPOINTS
+   * Geographic and political area operations
+   */
+
+  // Get all regions for a scenario
+  app.get("/api/scenarios/:scenarioId/regions", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.scenarioId;
+    
+    try {
+      const regions = await storage.getScenarioRegions(scenarioId);
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}/regions`, startTime, 200, `Retrieved ${regions.length} regions`);
+      res.json(regions);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}/regions`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Get single region
+  app.get("/api/regions/:id", async (req, res) => {
+    const startTime = Date.now();
+    const regionId = req.params.id;
+    
+    try {
+      const region = await storage.getRegion(regionId);
+      if (!region) {
+        logRequest('GET', `/api/regions/${regionId}`, startTime, 404, 'Region not found');
+        return res.status(404).json({ error: "Region not found", code: 'NOT_FOUND' });
+      }
+      
+      logRequest('GET', `/api/regions/${regionId}`, startTime, 200, `Retrieved: ${region.name}`);
+      res.json(region);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create new region
+  app.post("/api/regions", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      console.log(`[API] Creating region: ${JSON.stringify(req.body, null, 2)}`);
+      
+      const data = insertRegionSchema.parse(req.body);
+      const region = await storage.createRegion(data);
+      
+      logRequest('POST', '/api/regions', startTime, 201, `Created region: ${region.name} (${region.type})`);
+      res.status(201).json(region);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('POST', '/api/regions', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Update region
+  app.patch("/api/regions/:id", async (req, res) => {
+    const startTime = Date.now();
+    const regionId = req.params.id;
+    
+    try {
+      console.log(`[API] Updating region ${regionId}: ${JSON.stringify(req.body, null, 2)}`);
+      
+      const region = await storage.updateRegion(regionId, req.body);
+      
+      logRequest('PATCH', `/api/regions/${regionId}`, startTime, 200, `Updated: ${region.name}`);
+      res.json(region);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('PATCH', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Delete region
+  app.delete("/api/regions/:id", async (req, res) => {
+    const startTime = Date.now();
+    const regionId = req.params.id;
+    
+    try {
+      await storage.deleteRegion(regionId);
+      
+      logRequest('DELETE', `/api/regions/${regionId}`, startTime, 204, 'Region deleted');
+      res.status(204).send();
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('DELETE', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
+   * SCENARIO-SESSION LINKING ENDPOINTS
+   * Many-to-many relationship management
+   */
+
+  // Get scenarios linked to a session
+  app.get("/api/sessions/:sessionId/scenarios", async (req, res) => {
+    const startTime = Date.now();
+    const sessionId = req.params.sessionId;
+    
+    try {
+      const scenarios = await storage.getSessionScenarios(sessionId);
+      
+      logRequest('GET', `/api/sessions/${sessionId}/scenarios`, startTime, 200, `Retrieved ${scenarios.length} scenarios`);
+      res.json(scenarios);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', `/api/sessions/${sessionId}/scenarios`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Get sessions linked to a scenario
+  app.get("/api/scenarios/:scenarioId/sessions", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.scenarioId;
+    
+    try {
+      const sessions = await storage.getScenarioSessions(scenarioId);
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}/sessions`, startTime, 200, `Retrieved ${sessions.length} sessions`);
+      res.json(sessions);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('GET', `/api/scenarios/${scenarioId}/sessions`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Link scenario to session
+  app.post("/api/scenarios/:scenarioId/sessions/:sessionId/link", async (req, res) => {
+    const startTime = Date.now();
+    const { scenarioId, sessionId } = req.params;
+    
+    try {
+      console.log(`[API] Linking scenario ${scenarioId} to session ${sessionId}`);
+      
+      const link = await storage.linkScenarioToSession(scenarioId, sessionId);
+      
+      logRequest('POST', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, 201, 'Linked successfully');
+      res.status(201).json(link);
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('POST', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Unlink scenario from session
+  app.delete("/api/scenarios/:scenarioId/sessions/:sessionId/link", async (req, res) => {
+    const startTime = Date.now();
+    const { scenarioId, sessionId } = req.params;
+    
+    try {
+      console.log(`[API] Unlinking scenario ${scenarioId} from session ${sessionId}`);
+      
+      await storage.unlinkScenarioFromSession(scenarioId, sessionId);
+      
+      logRequest('DELETE', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, 204, 'Unlinked successfully');
+      res.status(204).send();
+      
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      
+      logRequest('DELETE', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
    * UTILITY AND MONITORING ENDPOINTS
    * Health checks and system information
    */
@@ -559,6 +878,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('  - POST   /api/sessions/:sessionId/timeline/reorder');
   console.log('  - POST   /api/generate-event');
   console.log('  - POST   /api/generate-npc');
+  console.log('  - GET    /api/scenarios');
+  console.log('  - GET    /api/scenarios/:id');
+  console.log('  - POST   /api/scenarios');
+  console.log('  - PATCH  /api/scenarios/:id');
+  console.log('  - DELETE /api/scenarios/:id');
+  console.log('  - GET    /api/scenarios/:scenarioId/regions');
+  console.log('  - GET    /api/regions/:id');
+  console.log('  - POST   /api/regions');
+  console.log('  - PATCH  /api/regions/:id');
+  console.log('  - DELETE /api/regions/:id');
+  console.log('  - GET    /api/sessions/:sessionId/scenarios');
+  console.log('  - GET    /api/scenarios/:scenarioId/sessions');
+  console.log('  - POST   /api/scenarios/:scenarioId/sessions/:sessionId/link');
+  console.log('  - DELETE /api/scenarios/:scenarioId/sessions/:sessionId/link');
   console.log('  - GET    /api/health');
   
   return httpServer;

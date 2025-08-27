@@ -256,6 +256,126 @@ export type InsertTimelineEvent = z.infer<typeof insertTimelineEventSchema>;
 export type TimelineEvent = typeof timelineEvents.$inferSelect;
 
 /**
+ * Scenarios table - Main scenario/campaign management
+ * 
+ * Stores high-level campaign information and world-building elements:
+ * - Main story concepts and themes
+ * - Regional politics and factions
+ * - Key locations and their relationships
+ * - Overarching narrative elements
+ * 
+ * Fields:
+ * - id: UUID primary key
+ * - userId: Foreign key to scenario creator
+ * - title: Main scenario name/title
+ * - mainIdea: Core concept and themes for the scenario
+ * - worldContext: Background information about the world/setting
+ * - politicalSituation: Current political climate and tensions
+ * - keyThemes: Major themes and narrative elements
+ * - status: Current scenario development status
+ * - createdAt/updatedAt: Audit timestamps
+ */
+export const scenarios = pgTable("scenarios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  title: text("title").notNull(),
+  mainIdea: text("main_idea").notNull(), // Core concept and central themes
+  worldContext: text("world_context"), // Background setting information
+  politicalSituation: text("political_situation"), // Current political climate
+  keyThemes: jsonb("key_themes"), // Array of themes: ["survival", "politics", "mystery"]
+  status: text("status").default("draft"), // 'draft' | 'active' | 'completed' | 'archived'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+/**
+ * Regions table - Geographic/political areas within scenarios
+ * 
+ * Represents major areas that control or influence the game world:
+ * - Cities, settlements, and territories
+ * - Controlling factions and their influence
+ * - Resources and strategic importance
+ * - Relationships with other regions
+ * 
+ * Fields:
+ * - id: UUID primary key
+ * - scenarioId: Foreign key to owning scenario
+ * - name: Region name (e.g., "New Angeles", "The Wastes")
+ * - type: Region classification for gameplay mechanics
+ * - description: Detailed region description
+ * - controllingFaction: Dominant faction or power
+ * - population: Estimated population or influence
+ * - resources: Available resources and strategic assets
+ * - threatLevel: Danger rating for player reference
+ * - politicalStance: Current political alignment
+ * - tradeRoutes: Connected regions for travel/commerce
+ * - createdAt: Creation timestamp
+ */
+export const regions = pgTable("regions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scenarioId: varchar("scenario_id").references(() => scenarios.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub'
+  description: text("description"),
+  controllingFaction: text("controlling_faction"), // Name of controlling faction
+  population: integer("population"), // Population size or influence level
+  resources: jsonb("resources"), // Array of resources: ["water", "fuel", "weapons"]
+  threatLevel: integer("threat_level").default(1), // 1-5 scale for danger assessment
+  politicalStance: text("political_stance"), // 'hostile' | 'neutral' | 'friendly' | 'allied'
+  tradeRoutes: jsonb("trade_routes"), // Array of connected region IDs
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+/**
+ * Scenario Sessions table - Links scenarios to specific game sessions
+ * 
+ * Many-to-many relationship allowing scenarios to span multiple sessions
+ * and sessions to draw from multiple scenarios for flexibility.
+ */
+export const scenarioSessions = pgTable("scenario_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scenarioId: varchar("scenario_id").references(() => scenarios.id),
+  sessionId: varchar("session_id").references(() => sessions.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Scenario creation schema
+export const insertScenarioSchema = createInsertSchema(scenarios).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  title: z.string().min(1).max(200),
+  mainIdea: z.string().min(10).max(2000),
+  worldContext: z.string().max(5000).optional(),
+  politicalSituation: z.string().max(3000).optional(),
+  keyThemes: z.array(z.string()).optional(),
+  status: z.enum(["draft", "active", "completed", "archived"]).optional(),
+});
+
+// Region creation schema
+export const insertRegionSchema = createInsertSchema(regions).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1).max(200),
+  type: z.enum(["city", "settlement", "wasteland", "fortress", "trade_hub"]),
+  description: z.string().max(3000).optional(),
+  controllingFaction: z.string().max(200).optional(),
+  population: z.number().int().min(0).optional(),
+  resources: z.array(z.string()).optional(),
+  threatLevel: z.number().int().min(1).max(5).optional(),
+  politicalStance: z.enum(["hostile", "neutral", "friendly", "allied"]).optional(),
+  tradeRoutes: z.array(z.string()).optional(),
+});
+
+// Scenario session link schema
+export const insertScenarioSessionSchema = createInsertSchema(scenarioSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+/**
  * Utility types for common operations
  */
 export type CreatorMode = "road" | "city";
@@ -264,3 +384,14 @@ export type NodeType = "event" | "npc" | "faction" | "location" | "item";
 export type ConnectionType = "temporal" | "spatial" | "factional" | "ownership";
 export type SessionPhase = "hook" | "exploration" | "rising_tension" | "climax" | "resolution";
 export type CompletionStatus = "true" | "false" | "skipped";
+export type ScenarioStatus = "draft" | "active" | "completed" | "archived";
+export type RegionType = "city" | "settlement" | "wasteland" | "fortress" | "trade_hub";
+export type PoliticalStance = "hostile" | "neutral" | "friendly" | "allied";
+
+// New types for scenario management
+export type InsertScenario = z.infer<typeof insertScenarioSchema>;
+export type Scenario = typeof scenarios.$inferSelect;
+export type InsertRegion = z.infer<typeof insertRegionSchema>;
+export type Region = typeof regions.$inferSelect;
+export type InsertScenarioSession = z.infer<typeof insertScenarioSessionSchema>;
+export type ScenarioSession = typeof scenarioSessions.$inferSelect;

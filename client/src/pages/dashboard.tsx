@@ -12,7 +12,8 @@ import { AiEventGenerator } from "@/components/ai-event-generator";
 import { CreatorSpecificControls } from "@/components/creator-specific-controls";
 import { NPCGenerator } from "@/components/npc-generator";
 import { Button } from "@/components/ui/button";
-import { Skull, Download, Save, Undo, HelpCircle } from "lucide-react";
+import { Skull, Download, Save, Undo, HelpCircle, MapPin } from "lucide-react";
+import { Link } from "wouter";
 import type { CreatorMode, AiMode, SessionData, NodeData, ConnectionData, TimelineEventData } from "@/lib/types";
 import type { Session, Node, Connection, TimelineEvent } from "@shared/schema";
 
@@ -197,6 +198,17 @@ export default function Dashboard() {
             <div className="bg-steel-700 px-3 py-2 rounded-lg font-mono text-sm">
               <span>{formatDuration(sessionDuration + (session?.duration || 0))}</span>
             </div>
+            
+            {/* Scenario Builder Button */}
+            <Link href="/scenarios">
+              <Button 
+                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
+                data-testid="button-scenario-builder"
+              >
+                <MapPin className="mr-2 h-4 w-4" />
+                Scenario Builder
+              </Button>
+            </Link>
             
             {/* Export Button */}
             <Button 

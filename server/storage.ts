@@ -25,7 +25,13 @@ import {
   type Connection,
   type InsertConnection,
   type TimelineEvent,
-  type InsertTimelineEvent
+  type InsertTimelineEvent,
+  type Scenario,
+  type InsertScenario,
+  type Region,
+  type InsertRegion,
+  type ScenarioSession,
+  type InsertScenarioSession
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -103,6 +109,26 @@ export interface IStorage {
   deleteTimelineEvent(id: string): Promise<void>;
   reorderTimelineEvents(sessionId: string, orderedIds: string[]): Promise<void>;
   
+  // Scenario management
+  getScenario(id: string): Promise<Scenario | undefined>;
+  getUserScenarios(userId: string): Promise<Scenario[]>;
+  createScenario(scenario: InsertScenario): Promise<Scenario>;
+  updateScenario(id: string, updates: Partial<Scenario>): Promise<Scenario>;
+  deleteScenario(id: string): Promise<void>; // Cascades to regions and sessions
+  
+  // Region management
+  getScenarioRegions(scenarioId: string): Promise<Region[]>;
+  getRegion(id: string): Promise<Region | undefined>;
+  createRegion(region: InsertRegion): Promise<Region>;
+  updateRegion(id: string, updates: Partial<Region>): Promise<Region>;
+  deleteRegion(id: string): Promise<void>;
+  
+  // Scenario-Session linking
+  linkScenarioToSession(scenarioId: string, sessionId: string): Promise<ScenarioSession>;
+  unlinkScenarioFromSession(scenarioId: string, sessionId: string): Promise<void>;
+  getSessionScenarios(sessionId: string): Promise<Scenario[]>;
+  getScenarioSessions(scenarioId: string): Promise<Session[]>;
+  
   // Utility methods for optimization
   getStorageStats(): Promise<{
     users: number;
@@ -110,6 +136,8 @@ export interface IStorage {
     nodes: number;
     connections: number;
     timelineEvents: number;
+    scenarios: number;
+    regions: number;
   }>;
 }
 
@@ -132,6 +160,9 @@ export class MemStorage implements IStorage {
   private nodes: Map<string, Node>;
   private connections: Map<string, Connection>;
   private timelineEvents: Map<string, TimelineEvent>;
+  private scenarios: Map<string, Scenario>;
+  private regions: Map<string, Region>;
+  private scenarioSessions: Map<string, ScenarioSession>;
 
   constructor() {
     this.users = new Map();
@@ -139,6 +170,9 @@ export class MemStorage implements IStorage {
     this.nodes = new Map();
     this.connections = new Map();
     this.timelineEvents = new Map();
+    this.scenarios = new Map();
+    this.regions = new Map();
+    this.scenarioSessions = new Map();
     
     // Log initialization for debugging
     console.log('[MemStorage] Initialized with empty collections');
@@ -335,11 +369,11 @@ export class MemStorage implements IStorage {
       }
 
       // Validate updates
-      if (updates.currentPhase !== undefined) {
+      if (updates.currentPhase !== undefined && updates.currentPhase !== null) {
         updates.currentPhase = Math.max(0, Math.min(4, updates.currentPhase));
       }
       
-      if (updates.duration !== undefined) {
+      if (updates.duration !== undefined && updates.duration !== null) {
         updates.duration = Math.max(0, updates.duration);
       }
       
@@ -827,6 +861,413 @@ export class MemStorage implements IStorage {
   }
 
   /**
+   * SCENARIO OPERATIONS
+   * High-level scenario and world-building management
+   */
+
+  async getScenario(id: string): Promise<Scenario | undefined> {
+    try {
+      this.validateId(id, 'getScenario');
+      const scenario = this.scenarios.get(id);
+      
+      if (scenario) {
+        console.log(`[MemStorage] Retrieved scenario: ${scenario.title}`);
+      }
+      
+      return scenario;
+    } catch (error) {
+      console.error(`[MemStorage] Error getting scenario '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async getUserScenarios(userId: string): Promise<Scenario[]> {
+    try {
+      this.validateId(userId, 'getUserScenarios');
+      
+      const scenarios = Array.from(this.scenarios.values()).filter(
+        scenario => scenario.userId === userId
+      );
+      
+      console.log(`[MemStorage] Found ${scenarios.length} scenarios for user ${userId}`);
+      return scenarios.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting scenarios for user '${userId}':`, error);
+      throw error;
+    }
+  }
+
+  async createScenario(insertScenario: InsertScenario): Promise<Scenario> {
+    try {
+      // Validate required fields
+      if (!insertScenario.title || insertScenario.title.trim() === '') {
+        throw new ValidationError('Scenario title is required');
+      }
+      
+      if (!insertScenario.mainIdea || insertScenario.mainIdea.trim() === '') {
+        throw new ValidationError('Main idea is required');
+      }
+
+      // Validate user exists if provided
+      if (insertScenario.userId) {
+        const user = await this.getUser(insertScenario.userId);
+        if (!user) {
+          throw new ReferentialIntegrityError(`User '${insertScenario.userId}' does not exist`);
+        }
+      }
+
+      const id = randomUUID();
+      const now = new Date();
+      const scenario: Scenario = { 
+        ...insertScenario, 
+        id,
+        userId: insertScenario.userId ?? null,
+        worldContext: insertScenario.worldContext ?? null,
+        politicalSituation: insertScenario.politicalSituation ?? null,
+        keyThemes: insertScenario.keyThemes ?? null,
+        status: insertScenario.status ?? "draft",
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      this.scenarios.set(id, scenario);
+      console.log(`[MemStorage] Created scenario: ${scenario.title} (${id})`);
+      return scenario;
+    } catch (error) {
+      console.error('[MemStorage] Error creating scenario:', error);
+      throw error;
+    }
+  }
+
+  async updateScenario(id: string, updates: Partial<Scenario>): Promise<Scenario> {
+    try {
+      this.validateId(id, 'updateScenario');
+      
+      const scenario = this.scenarios.get(id);
+      if (!scenario) {
+        throw new NotFoundError('Scenario', id);
+      }
+
+      // Validate updates
+      if (updates.title !== undefined && (!updates.title || updates.title.trim() === '')) {
+        throw new ValidationError('Scenario title cannot be empty');
+      }
+      
+      if (updates.status && !['draft', 'active', 'completed', 'archived'].includes(updates.status)) {
+        throw new ValidationError('Status must be: draft, active, completed, or archived');
+      }
+
+      const updatedScenario = { 
+        ...scenario, 
+        ...updates,
+        id, // Prevent ID changes
+        updatedAt: new Date()
+      };
+      
+      this.scenarios.set(id, updatedScenario);
+      console.log(`[MemStorage] Updated scenario: ${updatedScenario.title} (${id})`);
+      return updatedScenario;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating scenario '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deleteScenario(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deleteScenario');
+      
+      const scenario = this.scenarios.get(id);
+      if (!scenario) {
+        throw new NotFoundError('Scenario', id);
+      }
+
+      // Cascade delete related entities
+      const deletedRegions: string[] = [];
+      const deletedLinks: string[] = [];
+      
+      // Delete regions
+      Array.from(this.regions.entries())
+        .filter(([_, region]) => region.scenarioId === id)
+        .forEach(([regionId]) => {
+          this.regions.delete(regionId);
+          deletedRegions.push(regionId);
+        });
+      
+      // Delete scenario-session links
+      Array.from(this.scenarioSessions.entries())
+        .filter(([_, link]) => link.scenarioId === id)
+        .forEach(([linkId]) => {
+          this.scenarioSessions.delete(linkId);
+          deletedLinks.push(linkId);
+        });
+      
+      // Finally delete the scenario
+      this.scenarios.delete(id);
+      
+      console.log(`[MemStorage] Deleted scenario ${scenario.title} and cascaded: ${deletedRegions.length} regions, ${deletedLinks.length} session links`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting scenario '${id}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * REGION OPERATIONS
+   * Geographic and political area management
+   */
+
+  async getScenarioRegions(scenarioId: string): Promise<Region[]> {
+    try {
+      this.validateId(scenarioId, 'getScenarioRegions');
+      
+      const regions = Array.from(this.regions.values()).filter(
+        region => region.scenarioId === scenarioId
+      );
+      
+      console.log(`[MemStorage] Found ${regions.length} regions for scenario ${scenarioId}`);
+      return regions.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting regions for scenario '${scenarioId}':`, error);
+      throw error;
+    }
+  }
+
+  async getRegion(id: string): Promise<Region | undefined> {
+    try {
+      this.validateId(id, 'getRegion');
+      const region = this.regions.get(id);
+      
+      if (region) {
+        console.log(`[MemStorage] Retrieved region: ${region.name} (${region.type})`);
+      }
+      
+      return region;
+    } catch (error) {
+      console.error(`[MemStorage] Error getting region '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async createRegion(insertRegion: InsertRegion): Promise<Region> {
+    try {
+      // Validate required fields
+      if (!insertRegion.name || insertRegion.name.trim() === '') {
+        throw new ValidationError('Region name is required');
+      }
+      
+      if (!insertRegion.type || !['city', 'settlement', 'wasteland', 'fortress', 'trade_hub'].includes(insertRegion.type)) {
+        throw new ValidationError('Region type must be: city, settlement, wasteland, fortress, or trade_hub');
+      }
+
+      // Validate scenario exists if provided
+      if (insertRegion.scenarioId) {
+        const scenario = await this.getScenario(insertRegion.scenarioId);
+        if (!scenario) {
+          throw new ReferentialIntegrityError(`Scenario '${insertRegion.scenarioId}' does not exist`);
+        }
+      }
+
+      // Validate threat level
+      const threatLevel = insertRegion.threatLevel !== undefined ? 
+        Math.max(1, Math.min(5, insertRegion.threatLevel)) : 1;
+
+      const id = randomUUID();
+      const region: Region = { 
+        ...insertRegion, 
+        id,
+        scenarioId: insertRegion.scenarioId ?? null,
+        description: insertRegion.description ?? null,
+        controllingFaction: insertRegion.controllingFaction ?? null,
+        population: insertRegion.population ?? null,
+        resources: insertRegion.resources ?? null,
+        politicalStance: insertRegion.politicalStance ?? null,
+        tradeRoutes: insertRegion.tradeRoutes ?? null,
+        threatLevel,
+        createdAt: new Date()
+      };
+      
+      this.regions.set(id, region);
+      console.log(`[MemStorage] Created region: ${region.name} (${region.type}, ${id})`);
+      return region;
+    } catch (error) {
+      console.error('[MemStorage] Error creating region:', error);
+      throw error;
+    }
+  }
+
+  async updateRegion(id: string, updates: Partial<Region>): Promise<Region> {
+    try {
+      this.validateId(id, 'updateRegion');
+      
+      const region = this.regions.get(id);
+      if (!region) {
+        throw new NotFoundError('Region', id);
+      }
+
+      // Validate updates
+      if (updates.type && !['city', 'settlement', 'wasteland', 'fortress', 'trade_hub'].includes(updates.type)) {
+        throw new ValidationError('Region type must be: city, settlement, wasteland, fortress, or trade_hub');
+      }
+      
+      if (updates.name !== undefined && (!updates.name || updates.name.trim() === '')) {
+        throw new ValidationError('Region name cannot be empty');
+      }
+      
+      if (updates.threatLevel !== undefined && typeof updates.threatLevel === 'number') {
+        updates.threatLevel = Math.max(1, Math.min(5, updates.threatLevel));
+      }
+      
+      if (updates.politicalStance && !['hostile', 'neutral', 'friendly', 'allied'].includes(updates.politicalStance)) {
+        throw new ValidationError('Political stance must be: hostile, neutral, friendly, or allied');
+      }
+
+      const updatedRegion = { 
+        ...region, 
+        ...updates,
+        id // Prevent ID changes
+      };
+      
+      this.regions.set(id, updatedRegion);
+      console.log(`[MemStorage] Updated region: ${updatedRegion.name} (${id})`);
+      return updatedRegion;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating region '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deleteRegion(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deleteRegion');
+      
+      const region = this.regions.get(id);
+      if (!region) {
+        throw new NotFoundError('Region', id);
+      }
+
+      // Delete the region
+      this.regions.delete(id);
+      
+      console.log(`[MemStorage] Deleted region ${region.name}`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting region '${id}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * SCENARIO-SESSION LINKING
+   * Many-to-many relationship management
+   */
+
+  async linkScenarioToSession(scenarioId: string, sessionId: string): Promise<ScenarioSession> {
+    try {
+      this.validateId(scenarioId, 'linkScenarioToSession.scenarioId');
+      this.validateId(sessionId, 'linkScenarioToSession.sessionId');
+      
+      // Validate both entities exist
+      const scenario = await this.getScenario(scenarioId);
+      if (!scenario) {
+        throw new ReferentialIntegrityError(`Scenario '${scenarioId}' does not exist`);
+      }
+      
+      const session = await this.getSession(sessionId);
+      if (!session) {
+        throw new ReferentialIntegrityError(`Session '${sessionId}' does not exist`);
+      }
+
+      // Check if link already exists
+      const existingLink = Array.from(this.scenarioSessions.values())
+        .find(link => link.scenarioId === scenarioId && link.sessionId === sessionId);
+      
+      if (existingLink) {
+        console.log(`[MemStorage] Link already exists between scenario ${scenarioId} and session ${sessionId}`);
+        return existingLink;
+      }
+
+      const id = randomUUID();
+      const link: ScenarioSession = {
+        id,
+        scenarioId,
+        sessionId,
+        createdAt: new Date()
+      };
+      
+      this.scenarioSessions.set(id, link);
+      console.log(`[MemStorage] Linked scenario ${scenario.title} to session ${session.name}`);
+      return link;
+    } catch (error) {
+      console.error(`[MemStorage] Error linking scenario '${scenarioId}' to session '${sessionId}':`, error);
+      throw error;
+    }
+  }
+
+  async unlinkScenarioFromSession(scenarioId: string, sessionId: string): Promise<void> {
+    try {
+      this.validateId(scenarioId, 'unlinkScenarioFromSession.scenarioId');
+      this.validateId(sessionId, 'unlinkScenarioFromSession.sessionId');
+      
+      const linkToDelete = Array.from(this.scenarioSessions.entries())
+        .find(([_, link]) => link.scenarioId === scenarioId && link.sessionId === sessionId);
+      
+      if (linkToDelete) {
+        this.scenarioSessions.delete(linkToDelete[0]);
+        console.log(`[MemStorage] Unlinked scenario ${scenarioId} from session ${sessionId}`);
+      } else {
+        console.log(`[MemStorage] No link found between scenario ${scenarioId} and session ${sessionId}`);
+      }
+    } catch (error) {
+      console.error(`[MemStorage] Error unlinking scenario '${scenarioId}' from session '${sessionId}':`, error);
+      throw error;
+    }
+  }
+
+  async getSessionScenarios(sessionId: string): Promise<Scenario[]> {
+    try {
+      this.validateId(sessionId, 'getSessionScenarios');
+      await this.validateSessionExists(sessionId);
+      
+      const links = Array.from(this.scenarioSessions.values())
+        .filter(link => link.sessionId === sessionId);
+      
+      const scenarios = links
+        .map(link => this.scenarios.get(link.scenarioId!))
+        .filter(scenario => scenario !== undefined) as Scenario[];
+      
+      console.log(`[MemStorage] Found ${scenarios.length} scenarios for session ${sessionId}`);
+      return scenarios;
+    } catch (error) {
+      console.error(`[MemStorage] Error getting scenarios for session '${sessionId}':`, error);
+      throw error;
+    }
+  }
+
+  async getScenarioSessions(scenarioId: string): Promise<Session[]> {
+    try {
+      this.validateId(scenarioId, 'getScenarioSessions');
+      
+      const scenario = await this.getScenario(scenarioId);
+      if (!scenario) {
+        throw new NotFoundError('Scenario', scenarioId);
+      }
+      
+      const links = Array.from(this.scenarioSessions.values())
+        .filter(link => link.scenarioId === scenarioId);
+      
+      const sessions = links
+        .map(link => this.sessions.get(link.sessionId!))
+        .filter(session => session !== undefined) as Session[];
+      
+      console.log(`[MemStorage] Found ${sessions.length} sessions for scenario ${scenarioId}`);
+      return sessions.sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting sessions for scenario '${scenarioId}':`, error);
+      throw error;
+    }
+  }
+
+  /**
    * UTILITY METHODS
    * Performance monitoring and statistics
    */
@@ -837,6 +1278,8 @@ export class MemStorage implements IStorage {
     nodes: number;
     connections: number;
     timelineEvents: number;
+    scenarios: number;
+    regions: number;
   }> {
     return {
       users: this.users.size,
@@ -844,6 +1287,8 @@ export class MemStorage implements IStorage {
       nodes: this.nodes.size,
       connections: this.connections.size,
       timelineEvents: this.timelineEvents.size,
+      scenarios: this.scenarios.size,
+      regions: this.regions.size,
     };
   }
 }
