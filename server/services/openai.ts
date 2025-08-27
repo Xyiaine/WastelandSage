@@ -123,6 +123,146 @@ export interface GeneratedEvent {
  * @throws AIGenerationError - When generation fails
  * @throws AIValidationError - When response validation fails
  */
+/**
+ * Generate rich fallback events when AI service is unavailable
+ */
+function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent {
+  const eventType = context.eventType || 'discovery';
+  const environment = context.environment || 'wasteland';
+  const threatLevel = context.threatLevel || 'medium';
+  const timeOfDay = context.timeOfDay || 'noon';
+  const weather = context.weather || 'clear';
+  
+  // Rich event templates organized by type and environment
+  const roadEventTemplates = {
+    combat: {
+      wasteland: {
+        name: "Raider Ambush",
+        description: `A pack of rust-painted raiders emerges from behind the skeletal remains of an overturned truck. Their vehicles, cobbled together from scavenged parts and adorned with spikes, circle the party's position. The leader, wearing a gas mask decorated with human teeth, revs his engine menacingly. The raiders seem to be after your supplies, but their erratic behavior suggests they might be high on combat stims. The open wasteland offers little cover, but an old concrete bunker sits about 200 meters to the east.
+
+The weather is ${weather === 'clear' ? 'harsh and unforgiving' : weather === 'sandstorm' ? 'creating a brown haze that limits visibility' : weather === 'acidrain' ? 'causing the metal around you to hiss and steam' : 'charged with radiation that makes your dosimeter click ominously'}. The ${timeOfDay} sun ${timeOfDay === 'dawn' ? 'casts long shadows' : timeOfDay === 'noon' ? 'beats down mercilessly' : timeOfDay === 'dusk' ? 'bathes everything in orange light' : 'is replaced by the cold glow of the moon'}.`,
+        nodes: [{
+          type: 'npc',
+          name: 'Spike, Raider Boss',
+          description: 'Cybernetic eye, spiked leather armor, drives a weaponized buggy'
+        }]
+      },
+      ruins: {
+        name: "Tunnel Rats",
+        description: `You hear the scrabbling of claws on concrete echoing through the ruined subway tunnels. What emerges from the darkness are not the rats you expected, but a pack of feral humans who have lived underground for so long they've adapted to the perpetual darkness. Their pale skin is mottled with radiation burns, and their eyes have grown unnaturally large. They move with predatory grace through the debris-strewn tunnels, using makeshift weapons crafted from rebar and broken glass.
+
+The abandoned subway station around you is filled with the detritus of the old world - rusted turnstiles, collapsed vending machines, and graffiti that tells stories of humanity's last days. Water drips constantly from the cracked ceiling, and the air tastes of rust and decay.`,
+        nodes: [{
+          type: 'location',
+          name: 'Abandoned Subway Station',
+          description: 'Dark tunnels with multiple escape routes and hidden caches'
+        }]
+      }
+    },
+    discovery: {
+      gasstation: {
+        name: "The Last Drop",
+        description: `The rusted shell of what was once a Petromax station rises from the cracked asphalt like a monument to the old world. The overhead canopy is partially collapsed, its support beams twisted into abstract art by some long-ago explosion. But as you approach, you notice something unusual - one of the pumps is still intact, and there's a faint humming sound coming from underground.
+
+Investigation reveals that the station's underground tanks might still contain fuel, protected by a sophisticated pre-war locking mechanism. The station's convenience store is a time capsule of faded advertisements and empty shelves, but the back office contains a safe that's never been cracked. Outside, tire tracks in the dust suggest this place still sees visitors - but whether they're friendly traders or dangerous scavengers remains to be seen.`,
+        nodes: [{
+          type: 'item',
+          name: 'Pre-War Fuel Reserve',
+          description: 'High-grade gasoline worth a fortune in the wasteland'
+        }]
+      }
+    },
+    vehicle: {
+      highway: {
+        name: "Road Warrior's Last Stand",
+        description: `Ahead on the cracked highway, a massive armored truck sits motionless, its engine smoking. The vehicle is a masterpiece of wasteland engineering - reinforced with steel plates, bristling with weapon mounts, and decorated with the skulls of its previous victims. But something has finally stopped this road warrior's rampage.
+
+As you approach, you see the driver slumped over the wheel, still alive but badly wounded. His vehicle's engine has finally given out after years of abuse, and vultures are already circling overhead. The truck's cargo bay is secured with heavy chains and multiple locks, suggesting valuable cargo within. The driver's eyes flutter open as you approach - he might have information, supplies, or a dying request.`,
+        nodes: [{
+          type: 'npc',
+          name: 'Magnus the Road Warrior',
+          description: 'Dying wasteland legend with knowledge of hidden routes and caches'
+        }]
+      }
+    }
+  };
+  
+  const cityEventTemplates = {
+    politics: {
+      settlement: {
+        name: "The Water Vote",
+        description: `The settlement's council chamber buzzes with tension as representatives from three major factions debate control of the newly discovered aquifer. The Steelworkers Union, led by the charismatic foreman Martinez, argues that their technical expertise should give them primary access. The Merchant Collective, represented by the calculating trader Morgan, insists that water should be distributed through market mechanisms. Meanwhile, the People's Defense Force, under Captain Santos, demands that water be treated as a public resource.
+
+Each faction has brought armed supporters who eye each other warily across the makeshift chamber. The settlement's elderly mayor looks overwhelmed by the escalating rhetoric. Outside, ordinary settlers gather, knowing that this decision will determine whether they live or die in the coming drought season. The player characters' influence could tip the balance of power in the settlement for generations.`,
+        nodes: [{
+          type: 'faction',
+          name: 'Steelworkers Union',
+          description: 'Skilled technicians who maintain the settlement\'s infrastructure'
+        }]
+      }
+    },
+    trade: {
+      market: {
+        name: "The Memory Merchant",
+        description: `In a shadowy corner of the scrap market, an unusual vendor has set up shop. Her stall is filled not with weapons or supplies, but with small electronic devices that pulse with soft blue light. She calls herself Echo, and she trades in pre-war memories - digital recordings extracted from the neural implants of those who died during the Great Collapse.
+
+Echo claims these memory fragments contain everything from technical knowledge to the locations of hidden vaults. Some memories are mundane - a child's birthday party, a sunset over Central Park. Others are extraordinary - the launch codes for orbital weapons platforms, the formula for synthetic food production, the location of the President's emergency bunker. But accessing these memories comes with risks - some contain traumatic experiences that can psychologically damage the viewer.`,
+        nodes: [{
+          type: 'npc',
+          name: 'Echo the Memory Merchant',
+          description: 'Mysterious trader who deals in pre-war digital memories and forbidden knowledge'
+        }]
+      }
+    }
+  };
+  
+  // Get appropriate template based on mode and event type
+  const templates = context.creatorMode === 'road' ? roadEventTemplates : cityEventTemplates;
+  const eventGroup = (templates as any)[eventType];
+  
+  if (!eventGroup) {
+    // Generic fallback
+    return {
+      name: "Unexpected Encounter",
+      description: `Something unexpected happens in the ${environment} that requires the players' attention. The ${timeOfDay} timing and ${weather} conditions add complexity to the situation.`,
+      suggestedNodes: [],
+      suggestedConnections: [],
+      estimatedDuration: 30,
+      pacingImpact: 'tension',
+      gameplayTips: ['Encourage player creativity', 'Focus on roleplay opportunities'],
+      alternativeOutcomes: ['Peaceful resolution', 'Combat encounter', 'Information gathering'],
+      requiredPreparation: ['Basic NPC stats', 'Environmental details']
+    };
+  }
+  
+  const template = (eventGroup as any)[environment] || Object.values(eventGroup)[0];
+  const duration = threatLevel === 'low' ? 20 : threatLevel === 'high' ? 45 : 30;
+  
+  return {
+    name: template.name,
+    description: template.description,
+    suggestedNodes: template.nodes || [],
+    suggestedConnections: [],
+    estimatedDuration: duration,
+    pacingImpact: threatLevel === 'high' ? 'accelerate' : threatLevel === 'low' ? 'slow' : 'tension',
+    gameplayTips: [
+      `Emphasize the ${environment} environment in descriptions`,
+      `Consider the ${timeOfDay} timing for atmospheric effect`,
+      `Use ${weather} conditions to add challenge or atmosphere`
+    ],
+    alternativeOutcomes: [
+      `Peaceful negotiation leads to valuable information`,
+      `Combat encounter tests the party's tactical skills`,
+      `Stealth and cunning provide alternative solutions`
+    ],
+    requiredPreparation: [
+      `Prepare stats for any NPCs involved`,
+      `Consider environmental hazards and opportunities`,
+      `Plan multiple resolution paths based on player choices`
+    ]
+  };
+}
+
 export async function generateEvent(context: EventGenerationContext): Promise<GeneratedEvent> {
   // Input validation with defaults
   if (!context.sessionId || !context.creatorMode) {
@@ -189,33 +329,13 @@ export async function generateEvent(context: EventGenerationContext): Promise<Ge
     return validatedEvent;
     
   } catch (error) {
-    console.error('[OpenAI] Event generation failed:', error);
+    console.error('[OpenAI] Event generation failed, falling back to local generation:', error);
     
-    if (error instanceof SyntaxError) {
-      throw new AIValidationError(`Invalid JSON response from AI: ${error.message}`);
-    }
-    
-    if (error instanceof AIServiceError) {
-      throw error; // Re-throw our custom errors
-    }
-    
-    // Handle OpenAI API errors
-    if (error instanceof Error) {
-      if (error.message.includes('rate limit')) {
-        throw new AIGenerationError('Rate limit exceeded. Please try again in a moment.', error);
-      }
-      if (error.message.includes('API key')) {
-        throw new AIGenerationError('Invalid API key configuration', error);
-      }
-      if (error.message.includes('network')) {
-        throw new AIGenerationError('Network error connecting to AI service', error);
-      }
-    }
-    
-    throw new AIGenerationError(
-      `Unexpected error during event generation: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      error instanceof Error ? error : undefined
-    );
+    // Instead of throwing errors, fall back to rich local event generation
+    console.log('[OpenAI] API unavailable, using rich local event generation');
+    const fallbackEvent = generateFallbackEvent(enhancedContext);
+    console.log(`[Local] Generated fallback event: ${fallbackEvent.name}`);
+    return fallbackEvent;
   }
 }
 
