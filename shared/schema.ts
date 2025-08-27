@@ -345,12 +345,13 @@ export const insertScenarioSchema = createInsertSchema(scenarios).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  title: z.string().min(1).max(200),
-  mainIdea: z.string().min(10).max(2000),
-  worldContext: z.string().max(5000).optional(),
-  politicalSituation: z.string().max(3000).optional(),
-  keyThemes: z.array(z.string()).optional(),
-  status: z.enum(["draft", "active", "completed", "archived"]).optional(),
+  title: z.string().min(1, "Title is required").max(200, "Title must be under 200 characters"),
+  mainIdea: z.string().min(10, "Main idea must be at least 10 characters").max(2000, "Main idea must be under 2000 characters"),
+  worldContext: z.string().max(5000, "World context must be under 5000 characters").optional().nullable(),
+  politicalSituation: z.string().max(3000, "Political situation must be under 3000 characters").optional().nullable(),
+  keyThemes: z.array(z.string()).optional().nullable().default([]),
+  status: z.enum(["draft", "active", "completed", "archived"]).optional().default("draft"),
+  userId: z.string().optional().nullable(), // Allow userId to be passed in requests
 });
 
 // Region creation schema
