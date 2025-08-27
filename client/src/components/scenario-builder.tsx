@@ -177,7 +177,19 @@ export function ScenarioBuilder() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, userId: 'demo-user' })
       });
-      if (!response.ok) throw new Error('Failed to create scenario');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.details && Array.isArray(errorData.details)) {
+          // Format Zod validation errors
+          const validationErrors = errorData.details.map((detail: any) => 
+            `${detail.path.join('.')}: ${detail.message}`
+          ).join(', ');
+          throw new Error(`Validation failed: ${validationErrors}`);
+        }
+        throw new Error(errorData.error || 'Failed to create scenario');
+      }
+      
       const scenario = await response.json();
       setScenarios(prev => [scenario, ...prev]);
       setCurrentScenario(scenario);
@@ -254,6 +266,39 @@ export function ScenarioBuilder() {
       keyThemes: [],
       status: 'draft'
     });
+  };
+
+  // Validation helpers
+  const validateScenarioForm = () => {
+    const errors: string[] = [];
+    
+    if (!scenarioForm.title.trim()) {
+      errors.push('Title is required');
+    } else if (scenarioForm.title.length > 200) {
+      errors.push('Title must be under 200 characters');
+    }
+    
+    if (!scenarioForm.mainIdea.trim()) {
+      errors.push('Main idea is required');
+    } else if (scenarioForm.mainIdea.length < 10) {
+      errors.push('Main idea must be at least 10 characters');
+    } else if (scenarioForm.mainIdea.length > 2000) {
+      errors.push('Main idea must be under 2000 characters');
+    }
+    
+    if (scenarioForm.worldContext && scenarioForm.worldContext.length > 5000) {
+      errors.push('World context must be under 5000 characters');
+    }
+    
+    if (scenarioForm.politicalSituation && scenarioForm.politicalSituation.length > 3000) {
+      errors.push('Political situation must be under 3000 characters');
+    }
+    
+    return errors;
+  };
+
+  const isFormValid = () => {
+    return validateScenarioForm().length === 0;
   };
 
   const resetRegionForm = () => {
@@ -642,8 +687,13 @@ export function ScenarioBuilder() {
                     value={scenarioForm.title}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter scenario title..."
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className={`bg-slate-700 border-slate-600 text-white ${
+                      scenarioForm.title.length > 200 ? 'border-red-500' : ''
+                    }`}
                   />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.title.length}/200 characters
+                  </div>
                 </div>
                 
                 <div>
@@ -652,9 +702,20 @@ export function ScenarioBuilder() {
                     id="mainIdea"
                     value={scenarioForm.mainIdea}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, mainIdea: e.target.value }))}
-                    placeholder="Describe the core concept and central themes..."
-                    className="bg-slate-700 border-slate-600 text-white h-24"
+                    placeholder="Describe the core concept and central themes (minimum 10 characters)..."
+                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                      scenarioForm.mainIdea.length < 10 && scenarioForm.mainIdea.length > 0 ? 'border-yellow-500' :
+                      scenarioForm.mainIdea.length > 2000 ? 'border-red-500' : ''
+                    }`}
                   />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.mainIdea.length}/2000 characters
+                    {scenarioForm.mainIdea.length < 10 && (
+                      <span className="text-yellow-400 ml-2">
+                        (minimum 10 characters required)
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
@@ -664,8 +725,13 @@ export function ScenarioBuilder() {
                     value={scenarioForm.worldContext}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, worldContext: e.target.value }))}
                     placeholder="Background setting information..."
-                    className="bg-slate-700 border-slate-600 text-white h-24"
+                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                      (scenarioForm.worldContext?.length || 0) > 5000 ? 'border-red-500' : ''
+                    }`}
                   />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.worldContext?.length || 0}/5000 characters
+                  </div>
                 </div>
                 
                 <div>
@@ -675,8 +741,13 @@ export function ScenarioBuilder() {
                     value={scenarioForm.politicalSituation}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, politicalSituation: e.target.value }))}
                     placeholder="Current political climate and tensions..."
-                    className="bg-slate-700 border-slate-600 text-white h-24"
+                    className={`bg-slate-700 border-slate-600 text-white h-24 ${
+                      (scenarioForm.politicalSituation?.length || 0) > 3000 ? 'border-red-500' : ''
+                    }`}
                   />
+                  <div className="text-xs text-slate-400 mt-1">
+                    {scenarioForm.politicalSituation?.length || 0}/3000 characters
+                  </div>
                 </div>
                 
                 <div>
@@ -701,6 +772,21 @@ export function ScenarioBuilder() {
                 
                 <Separator className="bg-slate-600" />
                 
+                {/* Validation Errors */}
+                {validateScenarioForm().length > 0 && (
+                  <div className="bg-red-900/20 border border-red-500 rounded-md p-3">
+                    <div className="text-red-400 text-sm font-medium mb-2">Please fix the following issues:</div>
+                    <ul className="text-red-300 text-sm space-y-1">
+                      {validateScenarioForm().map((error, index) => (
+                        <li key={index} className="flex items-center">
+                          <span className="mr-2">•</span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
                 <div className="flex justify-end gap-3">
                   <Button
                     variant="outline"
@@ -714,8 +800,8 @@ export function ScenarioBuilder() {
                   </Button>
                   <Button
                     onClick={() => createScenario(scenarioForm)}
-                    disabled={!scenarioForm.title || !scenarioForm.mainIdea || loading}
-                    className="bg-orange-500 hover:bg-orange-600"
+                    disabled={!isFormValid() || loading}
+                    className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {loading ? 'Creating...' : 'Create Scenario'}
