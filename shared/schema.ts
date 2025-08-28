@@ -315,7 +315,7 @@ export const regions = pgTable("regions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   scenarioId: varchar("scenario_id").references(() => scenarios.id),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub'
+  type: text("type").notNull(), // 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub' | 'industrial'
   description: text("description"),
   controllingFaction: text("controlling_faction"), // Name of controlling faction
   population: integer("population"), // Population size or influence level
@@ -360,7 +360,7 @@ export const insertRegionSchema = createInsertSchema(regions).omit({
   createdAt: true,
 }).extend({
   name: z.string().min(1).max(200),
-  type: z.enum(["city", "settlement", "wasteland", "fortress", "trade_hub"]),
+  type: z.enum(["city", "settlement", "wasteland", "fortress", "trade_hub", "industrial"]),
   description: z.string().max(3000).optional(),
   controllingFaction: z.string().max(200).optional(),
   population: z.number().int().min(0).optional(),
@@ -386,7 +386,7 @@ export type ConnectionType = "temporal" | "spatial" | "factional" | "ownership";
 export type SessionPhase = "hook" | "exploration" | "rising_tension" | "climax" | "resolution";
 export type CompletionStatus = "true" | "false" | "skipped";
 export type ScenarioStatus = "draft" | "active" | "completed" | "archived";
-export type RegionType = "city" | "settlement" | "wasteland" | "fortress" | "trade_hub";
+export type RegionType = "city" | "settlement" | "wasteland" | "fortress" | "trade_hub" | "industrial";
 export type PoliticalStance = "hostile" | "neutral" | "friendly" | "allied";
 
 // New types for scenario management
