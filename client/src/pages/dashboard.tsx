@@ -208,8 +208,12 @@ export default function Dashboard() {
             {/* Scenario Builder Button */}
             <Link href="/scenarios">
               <Button 
-                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
+                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
                 data-testid="button-scenario-builder"
+                onClick={(e) => {
+                  console.log('Scenario Builder button clicked, navigating to /scenarios');
+                  e.stopPropagation();
+                }}
               >
                 <MapPin className="mr-2 h-4 w-4" />
                 {t('navigation.scenarios')}

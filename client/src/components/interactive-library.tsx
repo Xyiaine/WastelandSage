@@ -479,7 +479,11 @@ export function InteractiveLibrary({ showTitle = true }: InteractiveLibraryProps
                 <Link href="/scenarios">
                   <Button
                     size="sm"
-                    className="bg-orange-500 hover:bg-orange-600"
+                    className="bg-orange-500 hover:bg-orange-600 cursor-pointer"
+                    onClick={(e) => {
+                      console.log('Open in Builder clicked');
+                      e.stopPropagation();
+                    }}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open in Builder
