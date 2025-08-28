@@ -27,7 +27,7 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription } from './ui/alert';
-import { Plus, Save, Trash2, Edit3, Edit, MapPin, Users, Shield, Coins, AlertTriangle } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Edit, MapPin, Users, Shield, Coins, AlertTriangle, Crown, Zap, Target, Clock, Skull, Settings, Download, Upload, Shuffle, Lightbulb, Copy, FileText, Globe, Search } from 'lucide-react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
@@ -176,6 +176,49 @@ const CONDITION_SEVERITIES = [
   { value: 'extreme', label: 'Extreme', color: 'destructive' }
 ];
 
+const SCENARIO_TEMPLATES = [
+  {
+    id: 'post-apocalyptic-survival',
+    name: '🏜️ Post-Apocalyptic Survival',
+    description: 'Resource scarcity, harsh environment, small communities struggling to survive',
+    keyThemes: ['survival', 'resource scarcity', 'community building'],
+    worldContext: 'The world has been devastated by nuclear war. Small pockets of survivors cluster around vital resources.',
+    politicalSituation: 'No central authority exists. Local strongmen and resource controllers hold power.'
+  },
+  {
+    id: 'dieselpunk-trade-wars',
+    name: '⚙️ Dieselpunk Trade Wars',
+    description: 'Industrial city-states compete for resources and trade dominance',
+    keyThemes: ['trade & economics', 'technology', 'power struggle'],
+    worldContext: 'Massive industrial city-states dominate the landscape, connected by dangerous trade routes.',
+    politicalSituation: 'Uneasy alliances between city-states, with constant competition for resources and territory.'
+  },
+  {
+    id: 'wasteland-exploration',
+    name: '🗺️ Wasteland Exploration',
+    description: 'Adventure and discovery in the dangerous wasteland',
+    keyThemes: ['exploration', 'lost knowledge', 'environmental hazards'],
+    worldContext: 'Vast unexplored wastelands hide ancient ruins, lost technology, and deadly secrets.',
+    politicalSituation: 'Exploration guilds and scavenger organizations compete to claim valuable discoveries.'
+  },
+  {
+    id: 'faction-warfare',
+    name: '⚔️ Faction Warfare',
+    description: 'Large-scale conflicts between opposing factions',
+    keyThemes: ['warfare', 'politics', 'betrayal'],
+    worldContext: 'Multiple factions control different territories, constantly vying for supremacy.',
+    politicalSituation: 'Open warfare between major factions, with smaller groups forced to choose sides.'
+  },
+  {
+    id: 'underground-resistance',
+    name: '🕵️ Underground Resistance',
+    description: 'Secret operations against oppressive regimes',
+    keyThemes: ['betrayal', 'social hierarchy', 'redemption'],
+    worldContext: 'Totalitarian city-states oppress their populations while underground movements fight for freedom.',
+    politicalSituation: 'Authoritarian governments maintain control through fear, while resistance cells operate in secret.'
+  }
+];
+
 export function ScenarioBuilder() {
   // State management
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -232,7 +275,7 @@ export function ScenarioBuilder() {
     name: '',
     description: '',
     severity: 'moderate',
-    affectedRegions: [],
+    affectedRegions: [] as string[],
     duration: ''
   });
   
@@ -246,6 +289,12 @@ export function ScenarioBuilder() {
   const [editingQuest, setEditingQuest] = useState<ScenarioQuest | null>(null);
   const [showCreateCondition, setShowCreateCondition] = useState(false);
   const [editingCondition, setEditingCondition] = useState<EnvironmentalCondition | null>(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
 
   // API Functions
   const fetchScenarios = async () => {
@@ -648,12 +697,108 @@ export function ScenarioBuilder() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-            Scenario Builder
-          </h1>
-          <p className="text-slate-400 text-lg">
-            Create immersive worlds with interactive scenarios, cities, and regions
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                Scenario Builder
+              </h1>
+              <p className="text-slate-400 text-lg">
+                Create immersive worlds with interactive scenarios, cities, and regions
+              </p>
+            </div>
+            
+            {/* Advanced Toolbar */}
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowTemplateSelector(true)}
+                className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                Templates
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowAISuggestions(true)}
+                className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
+              >
+                <Lightbulb className="h-4 w-4 mr-2" />
+                AI Suggest
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowBulkActions(true)}
+                className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                disabled={selectedRegions.length === 0}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Bulk Actions ({selectedRegions.length})
+              </Button>
+              
+              <Button
+                size="sm"
+                onClick={() => {
+                  // Quick duplicate scenario
+                  if (currentScenario) {
+                    const duplicatedScenario = {
+                      ...currentScenario,
+                      id: `${currentScenario.id}-copy-${Date.now()}`,
+                      title: `${currentScenario.title} (Copy)`,
+                      status: 'draft' as const,
+                      createdAt: new Date(),
+                      updatedAt: new Date()
+                    };
+                    setScenarios(prev => [duplicatedScenario, ...prev]);
+                    setCurrentScenario(duplicatedScenario);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!currentScenario}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </Button>
+            </div>
+          </div>
+          
+          {/* Search and Filter Bar */}
+          {currentScenario && (
+            <div className="flex items-center gap-4 mt-4 p-4 bg-slate-800/30 rounded-lg">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search regions, NPCs, quests..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white pl-10"
+                  />
+                </div>
+              </div>
+              
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-48 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  <SelectItem value="all" className="text-white">All Content</SelectItem>
+                  <SelectItem value="regions" className="text-white">Regions Only</SelectItem>
+                  <SelectItem value="npcs" className="text-white">NPCs Only</SelectItem>
+                  <SelectItem value="quests" className="text-white">Quests Only</SelectItem>
+                  <SelectItem value="conditions" className="text-white">Conditions Only</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Badge variant="outline" className="text-slate-300">
+                {regions.length + npcs.length + quests.length + environmentalConditions.length} total items
+              </Badge>
+            </div>
+          )}
         </div>
 
         {/* Error Display */}
@@ -1704,6 +1849,743 @@ export function ScenarioBuilder() {
                       ? editingRegion ? 'Updating...' : 'Creating...'
                       : editingRegion ? 'Update Region' : 'Create Region'
                     }
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Create NPC Modal */}
+        {(showCreateNPC || editingNPC) && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  {editingNPC ? 'Edit NPC' : 'Create New NPC'}
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  {editingNPC ? 'Update character details' : 'Add a new character to your scenario'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="npcName" className="text-white">Name *</Label>
+                    <Input
+                      id="npcName"
+                      value={editingNPC?.name || npcForm.name}
+                      onChange={(e) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, name: e.target.value } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, name: e.target.value }));
+                        }
+                      }}
+                      placeholder="Enter character name..."
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="npcRole" className="text-white">Role *</Label>
+                    <Select
+                      value={editingNPC?.role || npcForm.role}
+                      onValueChange={(value) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, role: value } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, role: value }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {NPC_ROLES.map((role) => (
+                          <SelectItem key={role.value} value={role.value} className="text-white">
+                            {role.icon} {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="npcDescription" className="text-white">Description</Label>
+                  <Textarea
+                    id="npcDescription"
+                    value={editingNPC?.description || npcForm.description}
+                    onChange={(e) => {
+                      if (editingNPC) {
+                        setEditingNPC(prev => prev ? { ...prev, description: e.target.value } : prev);
+                      } else {
+                        setNpcForm(prev => ({ ...prev, description: e.target.value }));
+                      }
+                    }}
+                    placeholder="Describe the character's appearance, personality, and background..."
+                    className="bg-slate-700 border-slate-600 text-white h-24"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="npcLocation" className="text-white">Location</Label>
+                    <Input
+                      id="npcLocation"
+                      value={editingNPC?.location || npcForm.location}
+                      onChange={(e) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, location: e.target.value } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, location: e.target.value }));
+                        }
+                      }}
+                      placeholder="Where can they be found?"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="npcFaction" className="text-white">Faction</Label>
+                    <Input
+                      id="npcFaction"
+                      value={editingNPC?.faction || npcForm.faction}
+                      onChange={(e) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, faction: e.target.value } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, faction: e.target.value }));
+                        }
+                      }}
+                      placeholder="Which faction or group?"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="npcImportance" className="text-white">Importance</Label>
+                    <Select
+                      value={editingNPC?.importance || npcForm.importance}
+                      onValueChange={(value) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, importance: value as any } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, importance: value as any }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {IMPORTANCE_LEVELS.map((level) => (
+                          <SelectItem key={level.value} value={level.value} className="text-white">
+                            {level.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="npcStatus" className="text-white">Status</Label>
+                    <Select
+                      value={editingNPC?.status || npcForm.status}
+                      onValueChange={(value) => {
+                        if (editingNPC) {
+                          setEditingNPC(prev => prev ? { ...prev, status: value as any } : prev);
+                        } else {
+                          setNpcForm(prev => ({ ...prev, status: value as any }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        <SelectItem value="alive" className="text-white">Alive</SelectItem>
+                        <SelectItem value="dead" className="text-white">Dead</SelectItem>
+                        <SelectItem value="missing" className="text-white">Missing</SelectItem>
+                        <SelectItem value="unknown" className="text-white">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateNPC(false);
+                      setEditingNPC(null);
+                      setNpcForm({ name: '', role: 'survivor', description: '', location: '', faction: '', importance: 'minor', status: 'alive' });
+                    }}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // For demo - would normally call API
+                      const newNPC: ScenarioNPC = {
+                        id: Date.now().toString(),
+                        scenarioId: currentScenario!.id,
+                        name: editingNPC?.name || npcForm.name,
+                        role: editingNPC?.role || npcForm.role,
+                        description: editingNPC?.description || npcForm.description,
+                        location: editingNPC?.location || npcForm.location || null,
+                        faction: editingNPC?.faction || npcForm.faction || null,
+                        importance: (editingNPC?.importance || npcForm.importance) as any,
+                        status: (editingNPC?.status || npcForm.status) as any
+                      };
+                      
+                      if (editingNPC) {
+                        setNpcs(prev => prev.map(n => n.id === editingNPC.id ? newNPC : n));
+                        setEditingNPC(null);
+                      } else {
+                        setNpcs(prev => [...prev, newNPC]);
+                        setShowCreateNPC(false);
+                      }
+                      setNpcForm({ name: '', role: 'survivor', description: '', location: '', faction: '', importance: 'minor', status: 'alive' });
+                    }}
+                    disabled={!(editingNPC?.name || npcForm.name)}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {editingNPC ? 'Update' : 'Create'} NPC
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Create Quest Modal */}
+        {(showCreateQuest || editingQuest) && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  {editingQuest ? 'Edit Quest' : 'Create New Quest'}
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  {editingQuest ? 'Update quest details' : 'Add a new objective to your scenario'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="questTitle" className="text-white">Title *</Label>
+                  <Input
+                    id="questTitle"
+                    value={editingQuest?.title || questForm.title}
+                    onChange={(e) => {
+                      if (editingQuest) {
+                        setEditingQuest(prev => prev ? { ...prev, title: e.target.value } : prev);
+                      } else {
+                        setQuestForm(prev => ({ ...prev, title: e.target.value }));
+                      }
+                    }}
+                    placeholder="Enter quest title..."
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="questDescription" className="text-white">Description *</Label>
+                  <Textarea
+                    id="questDescription"
+                    value={editingQuest?.description || questForm.description}
+                    onChange={(e) => {
+                      if (editingQuest) {
+                        setEditingQuest(prev => prev ? { ...prev, description: e.target.value } : prev);
+                      } else {
+                        setQuestForm(prev => ({ ...prev, description: e.target.value }));
+                      }
+                    }}
+                    placeholder="Describe the quest objective and what needs to be accomplished..."
+                    className="bg-slate-700 border-slate-600 text-white h-24"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="questPriority" className="text-white">Priority</Label>
+                    <Select
+                      value={editingQuest?.priority || questForm.priority}
+                      onValueChange={(value) => {
+                        if (editingQuest) {
+                          setEditingQuest(prev => prev ? { ...prev, priority: value as any } : prev);
+                        } else {
+                          setQuestForm(prev => ({ ...prev, priority: value as any }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {QUEST_PRIORITIES.map((priority) => (
+                          <SelectItem key={priority.value} value={priority.value} className="text-white">
+                            {priority.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="questStatus" className="text-white">Status</Label>
+                    <Select
+                      value={editingQuest?.status || questForm.status}
+                      onValueChange={(value) => {
+                        if (editingQuest) {
+                          setEditingQuest(prev => prev ? { ...prev, status: value as any } : prev);
+                        } else {
+                          setQuestForm(prev => ({ ...prev, status: value as any }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        <SelectItem value="not_started" className="text-white">Not Started</SelectItem>
+                        <SelectItem value="active" className="text-white">Active</SelectItem>
+                        <SelectItem value="completed" className="text-white">Completed</SelectItem>
+                        <SelectItem value="failed" className="text-white">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="questRequirements" className="text-white">Requirements</Label>
+                  <Input
+                    id="questRequirements"
+                    value={editingQuest?.requirements || questForm.requirements}
+                    onChange={(e) => {
+                      if (editingQuest) {
+                        setEditingQuest(prev => prev ? { ...prev, requirements: e.target.value } : prev);
+                      } else {
+                        setQuestForm(prev => ({ ...prev, requirements: e.target.value }));
+                      }
+                    }}
+                    placeholder="What is needed to complete this quest?"
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="questRewards" className="text-white">Rewards</Label>
+                  <Input
+                    id="questRewards"
+                    value={editingQuest?.rewards || questForm.rewards}
+                    onChange={(e) => {
+                      if (editingQuest) {
+                        setEditingQuest(prev => prev ? { ...prev, rewards: e.target.value } : prev);
+                      } else {
+                        setQuestForm(prev => ({ ...prev, rewards: e.target.value }));
+                      }
+                    }}
+                    placeholder="What rewards will be given?"
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateQuest(false);
+                      setEditingQuest(null);
+                      setQuestForm({ title: '', description: '', status: 'not_started', priority: 'medium', rewards: '', requirements: '' });
+                    }}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // For demo - would normally call API
+                      const newQuest: ScenarioQuest = {
+                        id: Date.now().toString(),
+                        scenarioId: currentScenario!.id,
+                        title: editingQuest?.title || questForm.title,
+                        description: editingQuest?.description || questForm.description,
+                        status: (editingQuest?.status || questForm.status) as any,
+                        priority: (editingQuest?.priority || questForm.priority) as any,
+                        rewards: editingQuest?.rewards || questForm.rewards || null,
+                        requirements: editingQuest?.requirements || questForm.requirements || null
+                      };
+                      
+                      if (editingQuest) {
+                        setQuests(prev => prev.map(q => q.id === editingQuest.id ? newQuest : q));
+                        setEditingQuest(null);
+                      } else {
+                        setQuests(prev => [...prev, newQuest]);
+                        setShowCreateQuest(false);
+                      }
+                      setQuestForm({ title: '', description: '', status: 'not_started', priority: 'medium', rewards: '', requirements: '' });
+                    }}
+                    disabled={!(editingQuest?.title && editingQuest?.description) && !(questForm.title && questForm.description)}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {editingQuest ? 'Update' : 'Create'} Quest
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Create Environmental Condition Modal */}
+        {(showCreateCondition || editingCondition) && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  {editingCondition ? 'Edit Environmental Condition' : 'Create Environmental Condition'}
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  {editingCondition ? 'Update condition details' : 'Add weather, hazards, or climate effects'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="conditionName" className="text-white">Name *</Label>
+                  <Input
+                    id="conditionName"
+                    value={editingCondition?.name || conditionForm.name}
+                    onChange={(e) => {
+                      if (editingCondition) {
+                        setEditingCondition(prev => prev ? { ...prev, name: e.target.value } : prev);
+                      } else {
+                        setConditionForm(prev => ({ ...prev, name: e.target.value }));
+                      }
+                    }}
+                    placeholder="e.g., Radiation Storm, Acid Rain..."
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="conditionDescription" className="text-white">Description *</Label>
+                  <Textarea
+                    id="conditionDescription"
+                    value={editingCondition?.description || conditionForm.description}
+                    onChange={(e) => {
+                      if (editingCondition) {
+                        setEditingCondition(prev => prev ? { ...prev, description: e.target.value } : prev);
+                      } else {
+                        setConditionForm(prev => ({ ...prev, description: e.target.value }));
+                      }
+                    }}
+                    placeholder="Describe the environmental condition and its effects..."
+                    className="bg-slate-700 border-slate-600 text-white h-24"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="conditionSeverity" className="text-white">Severity</Label>
+                    <Select
+                      value={editingCondition?.severity || conditionForm.severity}
+                      onValueChange={(value) => {
+                        if (editingCondition) {
+                          setEditingCondition(prev => prev ? { ...prev, severity: value as any } : prev);
+                        } else {
+                          setConditionForm(prev => ({ ...prev, severity: value as any }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {CONDITION_SEVERITIES.map((severity) => (
+                          <SelectItem key={severity.value} value={severity.value} className="text-white">
+                            {severity.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="conditionDuration" className="text-white">Duration</Label>
+                    <Input
+                      id="conditionDuration"
+                      value={editingCondition?.duration || conditionForm.duration}
+                      onChange={(e) => {
+                        if (editingCondition) {
+                          setEditingCondition(prev => prev ? { ...prev, duration: e.target.value } : prev);
+                        } else {
+                          setConditionForm(prev => ({ ...prev, duration: e.target.value }));
+                        }
+                      }}
+                      placeholder="e.g., 3 days, permanent, seasonal..."
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-white mb-3 block">Affected Regions</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {regions.map((region) => {
+                      const currentAffected = editingCondition?.affectedRegions || conditionForm.affectedRegions;
+                      const isSelected = currentAffected.includes(region.id);
+                      return (
+                        <Badge
+                          key={region.id}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-orange-500 text-white border-orange-500"
+                              : "text-slate-300 border-slate-500 hover:border-orange-400"
+                          }`}
+                          onClick={() => {
+                            if (editingCondition) {
+                              const affected = editingCondition.affectedRegions || [];
+                              const newAffected = isSelected 
+                                ? affected.filter(r => r !== region.id)
+                                : [...affected, region.id];
+                              setEditingCondition(prev => prev ? { ...prev, affectedRegions: newAffected } : prev);
+                            } else {
+                              const affected = conditionForm.affectedRegions;
+                              const newAffected = isSelected 
+                                ? affected.filter(r => r !== region.id)
+                                : [...affected, region.id];
+                              setConditionForm(prev => ({ ...prev, affectedRegions: newAffected }));
+                            }
+                          }}
+                        >
+                          {getRegionIcon(region.type)} {region.name}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateCondition(false);
+                      setEditingCondition(null);
+                      setConditionForm({ name: '', description: '', severity: 'moderate', affectedRegions: [] as string[], duration: '' });
+                    }}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // For demo - would normally call API
+                      const newCondition: EnvironmentalCondition = {
+                        id: Date.now().toString(),
+                        scenarioId: currentScenario!.id,
+                        name: editingCondition?.name || conditionForm.name,
+                        description: editingCondition?.description || conditionForm.description,
+                        severity: (editingCondition?.severity || conditionForm.severity) as any,
+                        affectedRegions: editingCondition?.affectedRegions || conditionForm.affectedRegions,
+                        duration: editingCondition?.duration || conditionForm.duration || null
+                      };
+                      
+                      if (editingCondition) {
+                        setEnvironmentalConditions(prev => prev.map(c => c.id === editingCondition.id ? newCondition : c));
+                        setEditingCondition(null);
+                      } else {
+                        setEnvironmentalConditions(prev => [...prev, newCondition]);
+                        setShowCreateCondition(false);
+                      }
+                      setConditionForm({ name: '', description: '', severity: 'moderate', affectedRegions: [] as string[], duration: '' });
+                    }}
+                    disabled={!(editingCondition?.name && editingCondition?.description) && !(conditionForm.name && conditionForm.description)}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {editingCondition ? 'Update' : 'Create'} Condition
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Template Selector Modal */}
+        {showTemplateSelector && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-4xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-orange-400" />
+                  Scenario Templates
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  Choose a pre-built scenario template to get started quickly
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {SCENARIO_TEMPLATES.map((template) => (
+                    <Card key={template.id} className="bg-slate-700/50 border-slate-600 hover:border-orange-500/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setScenarioForm({
+                          title: template.name.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim(),
+                          mainIdea: template.description,
+                          worldContext: template.worldContext,
+                          politicalSituation: template.politicalSituation,
+                          keyThemes: template.keyThemes,
+                          status: 'draft'
+                        });
+                        setShowTemplateSelector(false);
+                        setShowCreateScenario(true);
+                      }}
+                    >
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-white mb-2">{template.name}</h3>
+                        <p className="text-sm text-slate-300 mb-3">{template.description}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {template.keyThemes.map((theme) => (
+                            <Badge key={theme} variant="outline" className="text-xs text-orange-300 border-orange-400">
+                              {theme}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div className="flex justify-end mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowTemplateSelector(false)}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* AI Suggestions Modal */}
+        {showAISuggestions && currentScenario && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-3xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-purple-400" />
+                  AI-Powered Suggestions
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  Get intelligent recommendations based on your current scenario
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" /> Suggested NPCs
+                  </h3>
+                  <div className="grid gap-3">
+                    {[
+                      { name: 'Marcus "Iron Hand" Voss', role: 'leader', description: 'Ruthless faction leader controlling northern trade routes' },
+                      { name: 'Dr. Elena Vasquez', role: 'scientist', description: 'Brilliant researcher studying pre-war technology' },
+                      { name: 'Raider Queen Scar', role: 'antagonist', description: 'Feared leader of the Crimson Skulls raider gang' }
+                    ].map((npc, index) => (
+                      <Card key={index} className="bg-slate-700/30 border-slate-600">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-white">{npc.name}</h4>
+                              <p className="text-sm text-slate-300">{npc.description}</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const newNPC: ScenarioNPC = {
+                                  id: Date.now().toString() + index,
+                                  scenarioId: currentScenario.id,
+                                  name: npc.name,
+                                  role: npc.role,
+                                  description: npc.description,
+                                  location: null,
+                                  faction: null,
+                                  importance: 'major',
+                                  status: 'alive'
+                                };
+                                setNpcs(prev => [...prev, newNPC]);
+                              }}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Target className="h-4 w-4" /> Suggested Quests
+                  </h3>
+                  <div className="grid gap-3">
+                    {[
+                      { title: 'The Lost Convoy', description: 'Investigate the disappearance of a vital supply convoy', priority: 'high' },
+                      { title: 'Water Rights Negotiation', description: 'Mediate between factions fighting over water access', priority: 'critical' },
+                      { title: 'Scavenge the Ruins', description: 'Explore ancient ruins for valuable pre-war technology', priority: 'medium' }
+                    ].map((quest, index) => (
+                      <Card key={index} className="bg-slate-700/30 border-slate-600">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-white">{quest.title}</h4>
+                              <p className="text-sm text-slate-300">{quest.description}</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const newQuest: ScenarioQuest = {
+                                  id: Date.now().toString() + index + 100,
+                                  scenarioId: currentScenario.id,
+                                  title: quest.title,
+                                  description: quest.description,
+                                  status: 'not_started',
+                                  priority: quest.priority as any,
+                                  rewards: null,
+                                  requirements: null
+                                };
+                                setQuests(prev => [...prev, newQuest]);
+                              }}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAISuggestions(false)}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Close
                   </Button>
                 </div>
               </CardContent>
