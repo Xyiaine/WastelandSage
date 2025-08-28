@@ -35,14 +35,16 @@ The backend is built with Express.js and follows a RESTful API pattern. The serv
 The API design supports CRUD operations for all major entities (sessions, nodes, connections, timeline events) with structured request/response patterns.
 
 ### Data Storage Solutions
-The application uses Drizzle ORM with PostgreSQL as the primary database solution. The database schema includes:
+The application uses both in-memory storage for development and Drizzle ORM with PostgreSQL for production. The storage architecture includes:
 - **Users**: Authentication and user management
-- **Sessions**: Core session management with creator mode, phases, and AI settings
+- **Sessions**: Core session management with creator mode, phases, and AI settings  
+- **Scenarios**: World-building templates with predefined settings and locations
+- **Regions**: Geographic locations within scenarios (cities, settlements, fortresses, etc.)
 - **Nodes**: Flexible entity storage for events, NPCs, factions, locations, and items
 - **Connections**: Relationship mapping between nodes with typed connections
 - **Timeline Events**: Sequential event management with ordering and completion tracking
 
-The schema is designed for flexibility with JSONB columns for type-specific properties and supports both temporal and spatial relationships between entities.
+The schema is designed for flexibility with JSONB columns for type-specific properties and supports both temporal and spatial relationships between entities. The system includes a default "Legacy of the Two Braziers - Mediterranean Basin" scenario that's automatically available with all 10 authentic city-states, ensuring users always have the complete world-building content ready for campaigns.
 
 ### Authentication and Authorization
 The system includes a basic user authentication structure with username/password authentication. The implementation uses session-based authentication with user context maintained throughout the application lifecycle.

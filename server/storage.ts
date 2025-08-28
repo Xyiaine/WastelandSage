@@ -174,8 +174,186 @@ export class MemStorage implements IStorage {
     this.regions = new Map();
     this.scenarioSessions = new Map();
     
+    // Initialize with default Mediterranean Basin scenario
+    this.initializeDefaultContent();
+    
     // Log initialization for debugging
-    console.log('[MemStorage] Initialized with empty collections');
+    console.log('[MemStorage] Initialized with default Mediterranean Basin scenario');
+  }
+
+  /**
+   * Initialize the storage with the default "Legacy of the Two Braziers" scenario
+   * This ensures the Mediterranean Basin world is always available
+   */
+  private initializeDefaultContent(): void {
+    const defaultScenarioId = 'legacy-two-braziers-mediterranean';
+    
+    // Create the default scenario
+    const defaultScenario: Scenario = {
+      id: defaultScenarioId,
+      userId: 'demo-user',
+      title: 'Legacy of the Two Braziers - Mediterranean Basin',
+      mainIdea: 'A campaign set in the post-apocalyptic Mediterranean Basin where 10 powerful city-states control vital resources after two devastating nuclear wars. Players navigate the delicate balance of power, survival, and intrigue in a world shaped by scarcity and diesel-powered machines.',
+      worldContext: 'The year is 2200. Two nuclear wars (2050 and 2100) have transformed the Mediterranean Basin into a harsh wasteland where survival depends on the fragile alliances between city-states. Each city controls a vital resource, creating a precarious balance of power where one misstep could trigger a third world war.',
+      politicalSituation: 'The 10 city-states exist in constant tension: Medical City heals but depends on others for fuel; Fuel City controls transport but produces unstable products; Industrial City builds everything but needs resources; Water & Food City feeds everyone but faces constant threats; Entertainment City influences minds but survives on others charity; Nuke City glows with power but spreads fear; Recycling City salvages the past but suffers radiation; Military City dominates by force but lacks materials; The Ancient Isle may be paradise or myth; Omega Bunker manipulates from shadows.',
+      keyThemes: ['survival', 'political_intrigue', 'resource_scarcity', 'technology_worship', 'faction_conflict'],
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.scenarios.set(defaultScenarioId, defaultScenario);
+    
+    // Create the 10 Mediterranean city-states
+    const defaultRegions = [
+      {
+        id: 'cite-medicale',
+        scenarioId: defaultScenarioId,
+        name: 'Cité Médicale',
+        type: 'city' as const,
+        description: '« Les Blouses Blanches » - Spécialité : médicaments, chirurgie, prothèses, vaccins. Indispensable pour soigner blessures, maladies et radiations. Dirigée par un conseil de docteurs et apothicaires autoritaires.',
+        controllingFaction: 'Les Blouses Blanches',
+        population: 15000,
+        resources: ['medicine', 'technology'],
+        threatLevel: 2,
+        politicalStance: 'neutral' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-carburant',
+        scenarioId: defaultScenarioId,
+        name: 'Cité du Carburant',
+        type: 'settlement' as const,
+        description: '« Les Raffineurs » - Spécialité : mazout, carburant synthétique, huiles. Contrôle les convois motorisés. Leurs raffineries sont aussi des forteresses mobiles. Carburant instable, parfois explosif.',
+        controllingFaction: 'Les Raffineurs',
+        population: 12000,
+        resources: ['fuel', 'technology'],
+        threatLevel: 3,
+        politicalStance: 'hostile' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-industrielle',
+        scenarioId: defaultScenarioId,
+        name: 'Cité Industrielle',
+        type: 'settlement' as const,
+        description: '« Les Forgerons d\'Acier » - Spécialité : machines, pièces détachées, mécanique lourde. Maîtrise la production de véhicules et générateurs. Usines colossales, villes entières noyées dans la fumée.',
+        controllingFaction: 'Les Forgerons d\'Acier',
+        population: 25000,
+        resources: ['metal', 'technology', 'machinery'],
+        threatLevel: 2,
+        politicalStance: 'neutral' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-eau-alimentation',
+        scenarioId: defaultScenarioId,
+        name: 'Cité de l\'Eau & Alimentation',
+        type: 'fortress' as const,
+        description: '« Les Gardiens de la Source » - Spécialité : serres blindées, puits, élevages, semences rares. Nourriture et eau = pouvoir vital. Fortifications autour de vastes réservoirs souterrains. Cible de toutes les convoitises.',
+        controllingFaction: 'Les Gardiens de la Source',
+        population: 18000,
+        resources: ['food', 'water', 'seeds'],
+        threatLevel: 4,
+        politicalStance: 'friendly' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-divertissement',
+        scenarioId: defaultScenarioId,
+        name: 'Cité du Divertissement',
+        type: 'trade_hub' as const,
+        description: '« Les Faiseurs de Rêves » - Spécialité : arènes, spectacles, cinéma, propagande. Influence culturelle et morale énorme. Connue pour ses radios et journaux de masse. Dépend des autres pour survivre matériellement.',
+        controllingFaction: 'Les Faiseurs de Rêves',
+        population: 20000,
+        resources: ['information', 'entertainment', 'propaganda'],
+        threatLevel: 1,
+        politicalStance: 'neutral' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'nuke-city',
+        scenarioId: defaultScenarioId,
+        name: 'Nuke City',
+        type: 'city' as const,
+        description: '« Le Réacteur à Ciel Ouvert » - Unique cité nucléaire de surface. Énergie colossale, défenses électrifiées, armes avancées. Ville lumineuse dans le désert, crainte de tous. Rayonnements, accidents et paranoïa des habitants.',
+        controllingFaction: 'Le Réacteur à Ciel Ouvert',
+        population: 8000,
+        resources: ['energy', 'technology', 'weapons'],
+        threatLevel: 5,
+        politicalStance: 'hostile' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-metaux-recyclage',
+        scenarioId: defaultScenarioId,
+        name: 'Cité des Métaux & Recyclage',
+        type: 'settlement' as const,
+        description: '« Les Fossoyeurs » - Spécialité : récupération dans les ruines, fonderies, mines. Fournit tous les métaux et alliages rares. Cité construite dans un cimetière de gratte-ciels effondrés. Habitants exposés à radiations et maladies.',
+        controllingFaction: 'Les Fossoyeurs',
+        population: 10000,
+        resources: ['metal', 'rare_materials', 'salvage'],
+        threatLevel: 3,
+        politicalStance: 'neutral' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'cite-armement-defense',
+        scenarioId: defaultScenarioId,
+        name: 'Cité de l\'Armement & Défense',
+        type: 'fortress' as const,
+        description: '« Les Arsenaux » - Spécialité : armes à feu, explosifs, blindages, véhicules de guerre. Puissance militaire écrasante. La cité est un gigantesque complexe militaire. Trop dépendante de matières premières.',
+        controllingFaction: 'Les Arsenaux',
+        population: 22000,
+        resources: ['weapons', 'explosives', 'armor'],
+        threatLevel: 5,
+        politicalStance: 'hostile' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'ile-des-anciens',
+        scenarioId: defaultScenarioId,
+        name: 'L\'Île des Anciens',
+        type: 'city' as const,
+        description: '« Le Paradis Perdu » - Technologie pré-apocalyptique intacte, agriculture abondante. Autosuffisante, riche, civilisée. Isolée, difficile à atteindre. Certains doutent même qu\'elle existe vraiment.',
+        controllingFaction: 'Le Paradis Perdu',
+        population: 5000,
+        resources: ['pre_war_tech', 'abundant_food', 'clean_water'],
+        threatLevel: 1,
+        politicalStance: 'neutral' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      },
+      {
+        id: 'bunker-omega',
+        scenarioId: defaultScenarioId,
+        name: 'Bunker Oméga',
+        type: 'fortress' as const,
+        description: '« Les Fantômes d\'Acier » - Cité souterraine ultra-avancée, énergie nucléaire. Technologie la plus avancée du monde (armes, drones, IA rudimentaires). N\'intervient pas officiellement, mais manipule la surface via espions et agents secrets.',
+        controllingFaction: 'Les Fantômes d\'Acier',
+        population: 3000,
+        resources: ['advanced_tech', 'ai', 'espionage'],
+        threatLevel: 5,
+        politicalStance: 'hostile' as const,
+        tradeRoutes: null,
+        createdAt: new Date()
+      }
+    ];
+    
+    // Add all regions to storage
+    defaultRegions.forEach(region => {
+      this.regions.set(region.id, region as Region);
+    });
+    
+    console.log(`[MemStorage] Initialized default scenario with ${defaultRegions.length} Mediterranean city-states`);
   }
 
   /**
