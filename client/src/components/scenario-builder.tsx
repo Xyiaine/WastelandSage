@@ -28,6 +28,42 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription } from './ui/alert';
 import { Plus, Save, Trash2, Edit3, Edit, MapPin, Users, Shield, Coins, AlertTriangle, Crown, Zap, Target, Clock, Skull, Settings, Download, Upload, Shuffle, Lightbulb, Copy, FileText, Globe, Search } from 'lucide-react';
+// Temporary local interfaces until we fix schema import
+interface ScenarioNPC {
+  id: string;
+  scenarioId: string;
+  name: string;
+  role: string;
+  description: string;
+  location: string | null;
+  faction: string | null;
+  importance: 'minor' | 'major' | 'critical';
+  status: 'alive' | 'dead' | 'missing' | 'unknown';
+  createdAt?: Date;
+}
+
+interface ScenarioQuest {
+  id: string;
+  scenarioId: string;
+  title: string;
+  description: string;
+  status: 'not_started' | 'active' | 'completed' | 'failed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  rewards: string | null;
+  requirements: string | null;
+  createdAt?: Date;
+}
+
+interface EnvironmentalCondition {
+  id: string;
+  scenarioId: string;
+  name: string;
+  description: string;
+  severity: 'mild' | 'moderate' | 'severe' | 'extreme';
+  affectedRegions: string[];
+  duration: string | null;
+  createdAt?: Date;
+}
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
@@ -46,38 +82,7 @@ interface Scenario {
   updatedAt: Date;
 }
 
-interface ScenarioNPC {
-  id: string;
-  scenarioId: string;
-  name: string;
-  role: string;
-  description: string;
-  location: string | null;
-  faction: string | null;
-  importance: 'minor' | 'major' | 'critical';
-  status: 'alive' | 'dead' | 'missing' | 'unknown';
-}
-
-interface ScenarioQuest {
-  id: string;
-  scenarioId: string;
-  title: string;
-  description: string;
-  status: 'not_started' | 'active' | 'completed' | 'failed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  rewards: string | null;
-  requirements: string | null;
-}
-
-interface EnvironmentalCondition {
-  id: string;
-  scenarioId: string;
-  name: string;
-  description: string;
-  severity: 'mild' | 'moderate' | 'severe' | 'extreme';
-  affectedRegions: string[];
-  duration: string | null;
-}
+// Types imported from shared schema
 
 interface Region {
   id: string;
@@ -295,6 +300,34 @@ export function ScenarioBuilder() {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  
+  // Filter content based on search query and filter type
+  const filteredContent = React.useMemo(() => {
+    let content: any[] = [];
+    
+    if (filterType === 'all' || filterType === 'regions') {
+      content = [...content, ...regions.map(r => ({ ...r, type: 'region' }))];
+    }
+    if (filterType === 'all' || filterType === 'npcs') {
+      content = [...content, ...npcs.map(n => ({ ...n, type: 'npc' }))];
+    }
+    if (filterType === 'all' || filterType === 'quests') {
+      content = [...content, ...quests.map(q => ({ ...q, type: 'quest' }))];
+    }
+    if (filterType === 'all' || filterType === 'conditions') {
+      content = [...content, ...environmentalConditions.map(c => ({ ...c, type: 'condition' }))];
+    }
+    
+    if (searchQuery) {
+      return content.filter(item => 
+        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    return content;
+  }, [regions, npcs, quests, environmentalConditions, searchQuery, filterType]);
 
   // API Functions
   const fetchScenarios = async () => {
@@ -2040,8 +2073,9 @@ export function ScenarioBuilder() {
                         description: editingNPC?.description || npcForm.description,
                         location: editingNPC?.location || npcForm.location || null,
                         faction: editingNPC?.faction || npcForm.faction || null,
-                        importance: (editingNPC?.importance || npcForm.importance) as any,
-                        status: (editingNPC?.status || npcForm.status) as any
+                        importance: (editingNPC?.importance || npcForm.importance) as 'minor' | 'major' | 'critical',
+                        status: (editingNPC?.status || npcForm.status) as 'alive' | 'dead' | 'missing' | 'unknown',
+                        createdAt: new Date()
                       };
                       
                       if (editingNPC) {
@@ -2217,10 +2251,11 @@ export function ScenarioBuilder() {
                         scenarioId: currentScenario!.id,
                         title: editingQuest?.title || questForm.title,
                         description: editingQuest?.description || questForm.description,
-                        status: (editingQuest?.status || questForm.status) as any,
-                        priority: (editingQuest?.priority || questForm.priority) as any,
+                        status: (editingQuest?.status || questForm.status) as 'not_started' | 'active' | 'completed' | 'failed',
+                        priority: (editingQuest?.priority || questForm.priority) as 'low' | 'medium' | 'high' | 'critical',
                         rewards: editingQuest?.rewards || questForm.rewards || null,
-                        requirements: editingQuest?.requirements || questForm.requirements || null
+                        requirements: editingQuest?.requirements || questForm.requirements || null,
+                        createdAt: new Date()
                       };
                       
                       if (editingQuest) {
@@ -2393,9 +2428,10 @@ export function ScenarioBuilder() {
                         scenarioId: currentScenario!.id,
                         name: editingCondition?.name || conditionForm.name,
                         description: editingCondition?.description || conditionForm.description,
-                        severity: (editingCondition?.severity || conditionForm.severity) as any,
+                        severity: (editingCondition?.severity || conditionForm.severity) as 'mild' | 'moderate' | 'severe' | 'extreme',
                         affectedRegions: editingCondition?.affectedRegions || conditionForm.affectedRegions,
-                        duration: editingCondition?.duration || conditionForm.duration || null
+                        duration: editingCondition?.duration || conditionForm.duration || null,
+                        createdAt: new Date()
                       };
                       
                       if (editingCondition) {
@@ -2438,7 +2474,7 @@ export function ScenarioBuilder() {
                     <Card key={template.id} className="bg-slate-700/50 border-slate-600 hover:border-orange-500/50 transition-colors cursor-pointer"
                       onClick={() => {
                         setScenarioForm({
-                          title: template.name.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim(),
+                          title: template.name.replace(/[\u2600-\u27bf\ud83c\ud83d\ud83e][\ud800-\udfff]?/g, '').trim(),
                           mainIdea: template.description,
                           worldContext: template.worldContext,
                           politicalSituation: template.politicalSituation,
@@ -2521,7 +2557,8 @@ export function ScenarioBuilder() {
                                   location: null,
                                   faction: null,
                                   importance: 'major',
-                                  status: 'alive'
+                                  status: 'alive',
+                                  createdAt: new Date()
                                 };
                                 setNpcs(prev => [...prev, newNPC]);
                               }}
@@ -2562,9 +2599,10 @@ export function ScenarioBuilder() {
                                   title: quest.title,
                                   description: quest.description,
                                   status: 'not_started',
-                                  priority: quest.priority as any,
+                                  priority: quest.priority as 'low' | 'medium' | 'high' | 'critical',
                                   rewards: null,
-                                  requirements: null
+                                  requirements: null,
+                                  createdAt: new Date()
                                 };
                                 setQuests(prev => [...prev, newQuest]);
                               }}

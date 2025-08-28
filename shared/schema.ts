@@ -396,3 +396,91 @@ export type InsertRegion = z.infer<typeof insertRegionSchema>;
 export type Region = typeof regions.$inferSelect;
 export type InsertScenarioSession = z.infer<typeof insertScenarioSessionSchema>;
 export type ScenarioSession = typeof scenarioSessions.$inferSelect;
+
+/**
+ * Additional Schema Types for Scenario Builder Features
+ */
+
+// NPC schema for scenarios
+export const scenarioNPCs = pgTable("scenario_npcs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scenarioId: varchar("scenario_id").references(() => scenarios.id),
+  name: text("name").notNull(),
+  role: text("role").notNull(), // 'leader' | 'trader' | 'scientist' | 'survivor' | 'antagonist' | 'guard' | 'merchant'
+  description: text("description"),
+  location: text("location"),
+  faction: text("faction"),
+  importance: text("importance").default("minor"), // 'minor' | 'major' | 'critical'
+  status: text("status").default("alive"), // 'alive' | 'dead' | 'missing' | 'unknown'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Quest schema for scenarios
+export const scenarioQuests = pgTable("scenario_quests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scenarioId: varchar("scenario_id").references(() => scenarios.id),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").default("not_started"), // 'not_started' | 'active' | 'completed' | 'failed'
+  priority: text("priority").default("medium"), // 'low' | 'medium' | 'high' | 'critical'
+  rewards: text("rewards"),
+  requirements: text("requirements"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Environmental Conditions schema for scenarios
+export const environmentalConditions = pgTable("environmental_conditions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scenarioId: varchar("scenario_id").references(() => scenarios.id),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  severity: text("severity").default("moderate"), // 'mild' | 'moderate' | 'severe' | 'extreme'
+  affectedRegions: jsonb("affected_regions"), // Array of region IDs
+  duration: text("duration"), // e.g., "3 days", "permanent", "seasonal"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertScenarioNPCSchema = createInsertSchema(scenarioNPCs).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1).max(200),
+  role: z.enum(["leader", "trader", "scientist", "survivor", "antagonist", "guard", "merchant"]),
+  description: z.string().max(3000).optional(),
+  location: z.string().max(200).optional(),
+  faction: z.string().max(200).optional(),
+  importance: z.enum(["minor", "major", "critical"]).optional(),
+  status: z.enum(["alive", "dead", "missing", "unknown"]).optional(),
+});
+
+export const insertScenarioQuestSchema = createInsertSchema(scenarioQuests).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1).max(3000),
+  status: z.enum(["not_started", "active", "completed", "failed"]).optional(),
+  priority: z.enum(["low", "medium", "high", "critical"]).optional(),
+  rewards: z.string().max(1000).optional(),
+  requirements: z.string().max(1000).optional(),
+});
+
+export const insertEnvironmentalConditionSchema = createInsertSchema(environmentalConditions).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1).max(200),
+  description: z.string().min(1).max(3000),
+  severity: z.enum(["mild", "moderate", "severe", "extreme"]).optional(),
+  affectedRegions: z.array(z.string()).optional(),
+  duration: z.string().max(200).optional(),
+});
+
+// Types for the new schemas
+export type InsertScenarioNPC = z.infer<typeof insertScenarioNPCSchema>;
+export type ScenarioNPC = typeof scenarioNPCs.$inferSelect;
+export type InsertScenarioQuest = z.infer<typeof insertScenarioQuestSchema>;
+export type ScenarioQuest = typeof scenarioQuests.$inferSelect;
+export type InsertEnvironmentalCondition = z.infer<typeof insertEnvironmentalConditionSchema>;
+export type EnvironmentalCondition = typeof environmentalConditions.$inferSelect;
