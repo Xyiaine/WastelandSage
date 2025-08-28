@@ -39,7 +39,90 @@
         "omegaBunker": "Omega Bunker: mythical underground city more advanced than all others"
       }
     },
-    "essence": "A powder keg where heat, radiation, famine and fanaticism reign. Every choice can tip the balance between survival, loyalty and betrayal."
+    "essence": "A powder keg where heat, radiation, famine and fanaticism reign. Every choice can tip the balance between survival, loyalty and betrayal.",
+    "cityStates": {
+      "title": "The 10 City-States of the Mediterranean Basin",
+      "medical": {
+        "name": "Medical City",
+        "faction": "The White Coats",
+        "specialty": "Medicine, surgery, prosthetics, vaccines",
+        "strength": "Essential for treating injuries, diseases and radiation",
+        "weakness": "Depends on others for fuel and food",
+        "particularity": "Led by an authoritarian council of doctors and apothecaries"
+      },
+      "fuel": {
+        "name": "Fuel City",
+        "faction": "The Refiners",
+        "specialty": "Fuel oil, synthetic fuel, oils",
+        "strength": "Controls motorized convoys",
+        "weakness": "Their fuel is unstable, sometimes explosive",
+        "particularity": "Their refineries are also mobile fortresses"
+      },
+      "industrial": {
+        "name": "Industrial City",
+        "faction": "The Steel Forgers",
+        "specialty": "Machines, spare parts, heavy mechanics",
+        "strength": "Masters vehicle and generator production",
+        "weakness": "Requires lots of raw materials and energy",
+        "particularity": "Colossal factories, entire cities drowned in smoke"
+      },
+      "waterFood": {
+        "name": "Water & Food City",
+        "faction": "The Source Guardians",
+        "specialty": "Armored greenhouses, wells, livestock, rare seeds",
+        "strength": "Food and water = vital power",
+        "weakness": "Target of all covetousness",
+        "particularity": "Fortifications around vast underground reservoirs"
+      },
+      "entertainment": {
+        "name": "Entertainment City",
+        "faction": "The Dream Makers",
+        "specialty": "Arenas, shows, cinema, propaganda",
+        "strength": "Enormous cultural and moral influence",
+        "weakness": "Depends on others to survive materially",
+        "particularity": "Known for its mass radio and newspapers"
+      },
+      "nuclear": {
+        "name": "Nuke City",
+        "faction": "The Open-Air Reactor",
+        "specialty": "Unique surface nuclear city",
+        "strength": "Colossal energy, electrified defenses, advanced weapons",
+        "weakness": "Radiation, accidents and inhabitant paranoia",
+        "particularity": "Bright city in the desert, feared by all"
+      },
+      "recycling": {
+        "name": "Metal & Recycling City",
+        "faction": "The Gravediggers",
+        "specialty": "Recovery from ruins, foundries, mines",
+        "strength": "Provides all metals and rare alloys",
+        "weakness": "Inhabitants exposed to radiation and diseases",
+        "particularity": "City built in a cemetery of collapsed skyscrapers"
+      },
+      "military": {
+        "name": "Armament & Defense City",
+        "faction": "The Arsenals",
+        "specialty": "Firearms, explosives, armor, war vehicles",
+        "strength": "Overwhelming military power",
+        "weakness": "Too dependent on raw materials",
+        "particularity": "The city is a gigantic military complex"
+      },
+      "ancientIsle": {
+        "name": "The Ancient Isle",
+        "faction": "The Lost Paradise",
+        "specialty": "Intact pre-apocalyptic technology, abundant agriculture",
+        "strength": "Self-sufficient, rich, civilized",
+        "weakness": "Isolated, difficult to reach",
+        "particularity": "Some even doubt it really exists"
+      },
+      "omegaBunker": {
+        "name": "Omega Bunker",
+        "faction": "The Steel Ghosts",
+        "specialty": "Ultra-advanced underground city, nuclear energy",
+        "strength": "World's most advanced technology (weapons, drones, rudimentary AI)",
+        "weakness": "Locked in secrecy, social isolation",
+        "particularity": "Doesn't intervene officially, but manipulates the surface via spies and secret agents"
+      }
+    }
   },
   "navigation": {
     "sessions": "Sessions",

@@ -2,7 +2,11 @@
 
 ## Overview
 
-This project is an AI-powered Game Master assistant application designed specifically for Dieselpunk, Mad Max, and Fallout-inspired tabletop RPG sessions set in the post-apocalyptic world of 2200. The application helps GMs build modular 4-hour RPG sessions with dynamic pacing and context-aware event generation within the "Legacy of the Two Braziers" setting - a world shaped by two devastating nuclear wars (2050 and 2100) where city-states control vital resources in a fragile balance. It features two distinct adventure creation modes: "On the Road" for fast-paced survival scenarios and "City/Camp" for intrigue-driven political gameplay. The system uses a node-based scenario library to store and connect events, NPCs, factions, items, and locations, with AI integration to maintain narrative consistency across sessions.
+This project is an AI-powered Game Master assistant application designed specifically for Dieselpunk, Mad Max, and Fallout-inspired tabletop RPG sessions set in the post-apocalyptic world of 2200. The application helps GMs build modular 4-hour RPG sessions with dynamic pacing and context-aware event generation within the "Legacy of the Two Braziers" setting - a world shaped by two devastating nuclear wars (2050 and 2100) where city-states control vital resources in a fragile balance. 
+
+The setting features the 10 City-States of the Mediterranean Basin, each controlling a vital resource: Medical City (Les Blouses Blanches), Fuel City (Les Raffineurs), Industrial City (Les Forgerons d'Acier), Water & Food City (Les Gardiens de la Source), Entertainment City (Les Faiseurs de Rêves), Nuke City (Le Réacteur à Ciel Ouvert), Metal & Recycling City (Les Fossoyeurs), Armament & Defense City (Les Arsenaux), The Ancient Isle (Le Paradis Perdu), and Omega Bunker (Les Fantômes d'Acier).
+
+It features two distinct adventure creation modes: "On the Road" for fast-paced survival scenarios and "City/Camp" for intrigue-driven political gameplay. The system uses a node-based scenario library to store and connect events, NPCs, factions, items, and locations, with AI integration to maintain narrative consistency across sessions.
 
 ## User Preferences
 

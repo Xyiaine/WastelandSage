@@ -39,7 +39,90 @@
         "omegaBunker": "Le Bunker Oméga : cité souterraine mythique plus avancée que toutes"
       }
     },
-    "essence": "Une poudrière où chaleur, radiations, famine et fanatismes règnent. Chaque choix peut faire basculer la balance entre survie, loyauté et trahison."
+    "essence": "Une poudrière où chaleur, radiations, famine et fanatismes règnent. Chaque choix peut faire basculer la balance entre survie, loyauté et trahison.",
+    "cityStates": {
+      "title": "Les 10 Cités-États du Bassin Méditerranéen",
+      "medical": {
+        "name": "Cité Médicale",
+        "faction": "Les Blouses Blanches",
+        "specialty": "Médicaments, chirurgie, prothèses, vaccins",
+        "strength": "Indispensable pour soigner blessures, maladies et radiations",
+        "weakness": "Dépend des autres pour carburant et nourriture",
+        "particularity": "Dirigée par un conseil de docteurs et apothicaires autoritaires"
+      },
+      "fuel": {
+        "name": "Cité du Carburant",
+        "faction": "Les Raffineurs",
+        "specialty": "Mazout, carburant synthétique, huiles",
+        "strength": "Contrôle les convois motorisés",
+        "weakness": "Leur carburant est instable, parfois explosif",
+        "particularity": "Leurs raffineries sont aussi des forteresses mobiles"
+      },
+      "industrial": {
+        "name": "Cité Industrielle",
+        "faction": "Les Forgerons d'Acier",
+        "specialty": "Machines, pièces détachées, mécanique lourde",
+        "strength": "Maîtrise la production de véhicules et générateurs",
+        "weakness": "Nécessite beaucoup de matières premières et d'énergie",
+        "particularity": "Usines colossales, villes entières noyées dans la fumée"
+      },
+      "waterFood": {
+        "name": "Cité de l'Eau & Alimentation",
+        "faction": "Les Gardiens de la Source",
+        "specialty": "Serres blindées, puits, élevages, semences rares",
+        "strength": "Nourriture et eau = pouvoir vital",
+        "weakness": "Cible de toutes les convoitises",
+        "particularity": "Fortifications autour de vastes réservoirs souterrains"
+      },
+      "entertainment": {
+        "name": "Cité du Divertissement",
+        "faction": "Les Faiseurs de Rêves",
+        "specialty": "Arènes, spectacles, cinéma, propagande",
+        "strength": "Influence culturelle et morale énorme",
+        "weakness": "Dépend des autres pour survivre matériellement",
+        "particularity": "Connue pour ses radios et journaux de masse"
+      },
+      "nuclear": {
+        "name": "Nuke City",
+        "faction": "Le Réacteur à Ciel Ouvert",
+        "specialty": "Unique cité nucléaire de surface",
+        "strength": "Énergie colossale, défenses électrifiées, armes avancées",
+        "weakness": "Rayonnements, accidents et paranoïa des habitants",
+        "particularity": "Ville lumineuse dans le désert, crainte de tous"
+      },
+      "recycling": {
+        "name": "Cité des Métaux & Recyclage",
+        "faction": "Les Fossoyeurs",
+        "specialty": "Récupération dans les ruines, fonderies, mines",
+        "strength": "Fournit tous les métaux et alliages rares",
+        "weakness": "Habitants exposés à radiations et maladies",
+        "particularity": "Cité construite dans un cimetière de gratte-ciels effondrés"
+      },
+      "military": {
+        "name": "Cité de l'Armement & Défense",
+        "faction": "Les Arsenaux",
+        "specialty": "Armes à feu, explosifs, blindages, véhicules de guerre",
+        "strength": "Puissance militaire écrasante",
+        "weakness": "Trop dépendante de matières premières",
+        "particularity": "La cité est un gigantesque complexe militaire"
+      },
+      "ancientIsle": {
+        "name": "L'Île des Anciens",
+        "faction": "Le Paradis Perdu",
+        "specialty": "Technologie pré-apocalyptique intacte, agriculture abondante",
+        "strength": "Autosuffisante, riche, civilisée",
+        "weakness": "Isolée, difficile à atteindre",
+        "particularity": "Certains doutent même qu'elle existe vraiment"
+      },
+      "omegaBunker": {
+        "name": "Bunker Oméga",
+        "faction": "Les Fantômes d'Acier",
+        "specialty": "Cité souterraine ultra-avancée, énergie nucléaire",
+        "strength": "Technologie la plus avancée du monde (armes, drones, IA rudimentaires)",
+        "weakness": "Enfermée dans son secret, isolement social",
+        "particularity": "N'intervient pas officiellement, mais manipule la surface via espions et agents secrets"
+      }
+    }
   },
   "navigation": {
     "sessions": "Sessions",
