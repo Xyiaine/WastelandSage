@@ -1,0 +1,192 @@
+{
+  "app": {
+    "title": "AI GM Assistant - Wasteland Edition",
+    "subtitle": "Dieselpunk RPG Session Creator"
+  },
+  "navigation": {
+    "sessions": "Sessions",
+    "scenarios": "Scenarios",
+    "library": "Node Library",
+    "settings": "Settings"
+  },
+  "language": {
+    "switch": "Language",
+    "english": "English",
+    "french": "Français"
+  },
+  "session": {
+    "create": "Create Session",
+    "new": "New Session",
+    "name": "Session Name",
+    "mode": "Creator Mode",
+    "roadMode": "On the Road",
+    "cityMode": "City/Camp",
+    "aiMode": "AI Mode",
+    "chaos": "Chaos",
+    "continuity": "Continuity",
+    "phase": "Current Phase",
+    "duration": "Duration (minutes)",
+    "save": "Save Session",
+    "edit": "Edit Session",
+    "delete": "Delete Session",
+    "list": "Session List",
+    "empty": "No sessions found. Create your first wasteland adventure!",
+    "loading": "Loading sessions...",
+    "phases": {
+      "hook": "Hook",
+      "exploration": "Exploration", 
+      "risingTension": "Rising Tension",
+      "climax": "Climax",
+      "resolution": "Resolution"
+    }
+  },
+  "scenario": {
+    "create": "Create Scenario",
+    "new": "New Scenario", 
+    "title": "Scenario Title",
+    "mainIdea": "Main Idea",
+    "worldContext": "World Context",
+    "politicalSituation": "Political Situation",
+    "keyThemes": "Key Themes",
+    "status": "Status",
+    "save": "Save Scenario",
+    "edit": "Edit Scenario",
+    "delete": "Delete Scenario",
+    "list": "Scenario List",
+    "empty": "No scenarios found. Create your first wasteland campaign!",
+    "loading": "Loading scenarios...",
+    "regions": "Regions",
+    "addRegion": "Add Region",
+    "export": "Export Scenarios",
+    "import": "Import Scenarios",
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active", 
+      "completed": "Completed",
+      "archived": "Archived"
+    }
+  },
+  "region": {
+    "create": "Create Region",
+    "new": "New Region",
+    "name": "Region Name", 
+    "type": "Region Type",
+    "description": "Description",
+    "controllingFaction": "Controlling Faction",
+    "population": "Population",
+    "resources": "Resources",
+    "threatLevel": "Threat Level",
+    "politicalStance": "Political Stance",
+    "save": "Save Region",
+    "edit": "Edit Region", 
+    "delete": "Delete Region",
+    "empty": "No regions found. Add locations to your wasteland!",
+    "types": {
+      "city": "City",
+      "settlement": "Settlement",
+      "wasteland": "Wasteland", 
+      "fortress": "Fortress",
+      "tradeHub": "Trade Hub",
+      "industrial": "Industrial"
+    },
+    "stances": {
+      "hostile": "Hostile",
+      "neutral": "Neutral",
+      "friendly": "Friendly", 
+      "allied": "Allied"
+    }
+  },
+  "node": {
+    "create": "Create Node",
+    "new": "New Node",
+    "name": "Node Name",
+    "type": "Node Type", 
+    "description": "Description",
+    "properties": "Properties",
+    "save": "Save Node",
+    "edit": "Edit Node",
+    "delete": "Delete Node",
+    "empty": "No nodes found. Build your story elements!",
+    "types": {
+      "event": "Event",
+      "npc": "NPC",
+      "faction": "Faction",
+      "location": "Location",
+      "item": "Item"
+    }
+  },
+  "timeline": {
+    "title": "Timeline Events",
+    "create": "Create Event",
+    "new": "New Timeline Event",
+    "name": "Event Name",
+    "description": "Description", 
+    "phase": "Phase",
+    "duration": "Duration (minutes)",
+    "orderIndex": "Order Index",
+    "completed": "Completed",
+    "save": "Save Event",
+    "edit": "Edit Event",
+    "delete": "Delete Event",
+    "empty": "No timeline events. Start building your session structure!",
+    "reorder": "Reorder Events"
+  },
+  "ai": {
+    "generateEvent": "Generate Event",
+    "generateNPC": "Generate NPC",
+    "generating": "Generating with AI...",
+    "error": "AI generation failed. Please try again."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit", 
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "add": "Add",
+    "remove": "Remove",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Minimum length is {{min}} characters",
+    "maxLength": "Maximum length is {{max}} characters", 
+    "invalidFormat": "Invalid format",
+    "numberRequired": "Must be a number",
+    "positiveNumber": "Must be a positive number"
+  },
+  "messages": {
+    "sessionCreated": "Session created successfully",
+    "sessionUpdated": "Session updated successfully", 
+    "sessionDeleted": "Session deleted successfully",
+    "scenarioCreated": "Scenario created successfully",
+    "scenarioUpdated": "Scenario updated successfully",
+    "scenarioDeleted": "Scenario deleted successfully",
+    "regionCreated": "Region created successfully",
+    "regionUpdated": "Region updated successfully",
+    "regionDeleted": "Region deleted successfully",
+    "nodeCreated": "Node created successfully",
+    "nodeUpdated": "Node updated successfully",
+    "nodeDeleted": "Node deleted successfully",
+    "eventCreated": "Timeline event created successfully",
+    "eventUpdated": "Timeline event updated successfully", 
+    "eventDeleted": "Timeline event deleted successfully",
+    "exportSuccess": "Scenarios exported successfully",
+    "importSuccess": "Scenarios imported successfully",
+    "genericError": "An error occurred. Please try again.",
+    "networkError": "Network error. Please check your connection."
+  }
+}

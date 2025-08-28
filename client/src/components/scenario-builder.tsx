@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -27,6 +28,7 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription } from './ui/alert';
 import { Plus, Save, Trash2, Edit3, Edit, MapPin, Users, Shield, Coins, AlertTriangle } from 'lucide-react';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
 
@@ -48,7 +50,7 @@ interface Region {
   id: string;
   scenarioId: string | null;
   name: string;
-  type: 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub';
+  type: 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub' | 'industrial';
   description: string | null;
   controllingFaction: string | null;
   population: number | null;
@@ -71,7 +73,7 @@ interface CreateScenarioData {
 
 interface CreateRegionData {
   name: string;
-  type: 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub';
+  type: 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub' | 'industrial';
   description?: string;
   controllingFaction?: string;
   population?: number;
@@ -1056,11 +1058,11 @@ export function ScenarioBuilder() {
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, worldContext: e.target.value }))}
                     placeholder="Detail the setting, geography, and environmental conditions..."
                     className={`bg-slate-700 border-slate-600 text-white h-24 ${
-                      scenarioForm.worldContext.length > 10000 ? 'border-red-500' : ''
+                      (scenarioForm.worldContext || '').length > 10000 ? 'border-red-500' : ''
                     }`}
                   />
                   <div className="text-xs text-slate-400 mt-1">
-                    {scenarioForm.worldContext.length}/10000 characters
+                    {(scenarioForm.worldContext || '').length}/10000 characters
                   </div>
                 </div>
                 
@@ -1072,11 +1074,11 @@ export function ScenarioBuilder() {
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, politicalSituation: e.target.value }))}
                     placeholder="Describe the power dynamics, conflicts, and alliances..."
                     className={`bg-slate-700 border-slate-600 text-white h-24 ${
-                      scenarioForm.politicalSituation.length > 10000 ? 'border-red-500' : ''
+                      (scenarioForm.politicalSituation || '').length > 10000 ? 'border-red-500' : ''
                     }`}
                   />
                   <div className="text-xs text-slate-400 mt-1">
-                    {scenarioForm.politicalSituation.length}/10000 characters
+                    {(scenarioForm.politicalSituation || '').length}/10000 characters
                   </div>
                 </div>
                 

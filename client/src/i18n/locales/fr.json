@@ -1,0 +1,192 @@
+{
+  "app": {
+    "title": "Assistant MJ IA - Édition Wasteland",
+    "subtitle": "Créateur de Sessions RPG Dieselpunk"
+  },
+  "navigation": {
+    "sessions": "Sessions",
+    "scenarios": "Scénarios", 
+    "library": "Bibliothèque de Nœuds",
+    "settings": "Paramètres"
+  },
+  "language": {
+    "switch": "Langue",
+    "english": "English",
+    "french": "Français"
+  },
+  "session": {
+    "create": "Créer une Session",
+    "new": "Nouvelle Session",
+    "name": "Nom de la Session", 
+    "mode": "Mode Créateur",
+    "roadMode": "Sur la Route",
+    "cityMode": "Ville/Camp",
+    "aiMode": "Mode IA",
+    "chaos": "Chaos",
+    "continuity": "Continuité",
+    "phase": "Phase Actuelle",
+    "duration": "Durée (minutes)",
+    "save": "Sauvegarder Session",
+    "edit": "Modifier Session",
+    "delete": "Supprimer Session",
+    "list": "Liste des Sessions",
+    "empty": "Aucune session trouvée. Créez votre première aventure wasteland !",
+    "loading": "Chargement des sessions...",
+    "phases": {
+      "hook": "Accroche",
+      "exploration": "Exploration",
+      "risingTension": "Tension Montante", 
+      "climax": "Climax",
+      "resolution": "Résolution"
+    }
+  },
+  "scenario": {
+    "create": "Créer un Scénario",
+    "new": "Nouveau Scénario",
+    "title": "Titre du Scénario",
+    "mainIdea": "Idée Principale",
+    "worldContext": "Contexte du Monde",
+    "politicalSituation": "Situation Politique",
+    "keyThemes": "Thèmes Clés",
+    "status": "Statut", 
+    "save": "Sauvegarder Scénario",
+    "edit": "Modifier Scénario",
+    "delete": "Supprimer Scénario",
+    "list": "Liste des Scénarios",
+    "empty": "Aucun scénario trouvé. Créez votre première campagne wasteland !",
+    "loading": "Chargement des scénarios...",
+    "regions": "Régions",
+    "addRegion": "Ajouter une Région",
+    "export": "Exporter les Scénarios", 
+    "import": "Importer les Scénarios",
+    "statuses": {
+      "draft": "Brouillon",
+      "active": "Actif",
+      "completed": "Terminé",
+      "archived": "Archivé"
+    }
+  },
+  "region": {
+    "create": "Créer une Région",
+    "new": "Nouvelle Région",
+    "name": "Nom de la Région",
+    "type": "Type de Région",
+    "description": "Description",
+    "controllingFaction": "Faction Contrôlante",
+    "population": "Population",
+    "resources": "Ressources",
+    "threatLevel": "Niveau de Menace",
+    "politicalStance": "Position Politique",
+    "save": "Sauvegarder Région",
+    "edit": "Modifier Région",
+    "delete": "Supprimer Région",
+    "empty": "Aucune région trouvée. Ajoutez des lieux à votre wasteland !",
+    "types": {
+      "city": "Ville",
+      "settlement": "Colonie",
+      "wasteland": "Terres Désolées",
+      "fortress": "Forteresse", 
+      "tradeHub": "Centre Commercial",
+      "industrial": "Industriel"
+    },
+    "stances": {
+      "hostile": "Hostile",
+      "neutral": "Neutre",
+      "friendly": "Amical",
+      "allied": "Allié"
+    }
+  },
+  "node": {
+    "create": "Créer un Nœud",
+    "new": "Nouveau Nœud",
+    "name": "Nom du Nœud",
+    "type": "Type de Nœud",
+    "description": "Description",
+    "properties": "Propriétés",
+    "save": "Sauvegarder Nœud",
+    "edit": "Modifier Nœud",
+    "delete": "Supprimer Nœud",
+    "empty": "Aucun nœud trouvé. Construisez vos éléments d'histoire !",
+    "types": {
+      "event": "Événement",
+      "npc": "PNJ",
+      "faction": "Faction",
+      "location": "Lieu",
+      "item": "Objet"
+    }
+  },
+  "timeline": {
+    "title": "Événements de la Timeline",
+    "create": "Créer un Événement", 
+    "new": "Nouvel Événement Timeline",
+    "name": "Nom de l'Événement",
+    "description": "Description",
+    "phase": "Phase",
+    "duration": "Durée (minutes)",
+    "orderIndex": "Index d'Ordre",
+    "completed": "Terminé",
+    "save": "Sauvegarder Événement",
+    "edit": "Modifier Événement",
+    "delete": "Supprimer Événement",
+    "empty": "Aucun événement timeline. Commencez à construire la structure de votre session !",
+    "reorder": "Réorganiser les Événements"
+  },
+  "ai": {
+    "generateEvent": "Générer un Événement",
+    "generateNPC": "Générer un PNJ",
+    "generating": "Génération avec l'IA...",
+    "error": "La génération IA a échoué. Veuillez réessayer."
+  },
+  "common": {
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "sort": "Trier",
+    "add": "Ajouter",
+    "remove": "Supprimer",
+    "required": "Requis", 
+    "optional": "Optionnel"
+  },
+  "validation": {
+    "required": "Ce champ est requis",
+    "minLength": "La longueur minimale est de {{min}} caractères",
+    "maxLength": "La longueur maximale est de {{max}} caractères",
+    "invalidFormat": "Format invalide",
+    "numberRequired": "Doit être un nombre",
+    "positiveNumber": "Doit être un nombre positif"
+  },
+  "messages": {
+    "sessionCreated": "Session créée avec succès",
+    "sessionUpdated": "Session mise à jour avec succès",
+    "sessionDeleted": "Session supprimée avec succès",
+    "scenarioCreated": "Scénario créé avec succès",
+    "scenarioUpdated": "Scénario mis à jour avec succès",
+    "scenarioDeleted": "Scénario supprimé avec succès",
+    "regionCreated": "Région créée avec succès",
+    "regionUpdated": "Région mise à jour avec succès",
+    "regionDeleted": "Région supprimée avec succès", 
+    "nodeCreated": "Nœud créé avec succès",
+    "nodeUpdated": "Nœud mis à jour avec succès",
+    "nodeDeleted": "Nœud supprimé avec succès",
+    "eventCreated": "Événement timeline créé avec succès",
+    "eventUpdated": "Événement timeline mis à jour avec succès",
+    "eventDeleted": "Événement timeline supprimé avec succès",
+    "exportSuccess": "Scénarios exportés avec succès",
+    "importSuccess": "Scénarios importés avec succès",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion."
+  }
+}

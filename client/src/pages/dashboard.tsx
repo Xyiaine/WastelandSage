@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "wouter";
+import { useTranslation } from 'react-i18next';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CreatorModeToggle } from "@/components/creator-mode-toggle";
@@ -11,6 +12,7 @@ import { PacingControls } from "@/components/pacing-controls";
 import { AiEventGenerator } from "@/components/ai-event-generator";
 import { CreatorSpecificControls } from "@/components/creator-specific-controls";
 import { NPCGenerator } from "@/components/npc-generator";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Skull, Download, Save, Undo, HelpCircle, MapPin } from "lucide-react";
 import { Link } from "wouter";
@@ -19,6 +21,7 @@ import type { Session, Node, Connection, TimelineEvent } from "@shared/schema";
 
 export default function Dashboard() {
   const { sessionId } = useParams();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId || null);
   const [creatorMode, setCreatorMode] = useState<CreatorMode>('road');
@@ -40,7 +43,7 @@ export default function Dashboard() {
       setCurrentSessionId(session.id);
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
       toast({
-        title: "New Session Created",
+        title: t('messages.sessionCreated'),
         description: `${session.name} is ready for adventure.`,
       });
     },
@@ -164,7 +167,7 @@ export default function Dashboard() {
           <div className="w-12 h-12 bg-rust-500 rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
             <Skull className="text-steel-800 text-xl" />
           </div>
-          <p className="text-rust-400 font-mono">Initializing Wasteland Session...</p>
+          <p className="text-rust-400 font-mono">{t('session.loading')}</p>
         </div>
       </div>
     );
@@ -182,12 +185,15 @@ export default function Dashboard() {
               <Skull className="text-steel-800 text-xl" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-rust-400">AI GM Assistant</h1>
-              <p className="text-sm text-gray-400 font-mono">Wasteland Edition v2.1</p>
+              <h1 className="text-2xl font-bold text-rust-400">{t('app.title')}</h1>
+              <p className="text-sm text-gray-400 font-mono">{t('app.subtitle')}</p>
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+            
             {/* AI Status Indicator */}
             <div className="flex items-center space-x-2 bg-steel-700 px-3 py-2 rounded-lg">
               <div className="w-2 h-2 bg-toxic-400 rounded-full animate-pulse"></div>
@@ -206,7 +212,7 @@ export default function Dashboard() {
                 data-testid="button-scenario-builder"
               >
                 <MapPin className="mr-2 h-4 w-4" />
-                Scenario Builder
+                {t('navigation.scenarios')}
               </Button>
             </Link>
             
@@ -224,7 +230,7 @@ export default function Dashboard() {
               data-testid="button-quick-export"
             >
               <Download className="mr-2 h-4 w-4" />
-              Export Scenarios
+              {t('scenario.export')}
             </Button>
             
             {/* Export Button */}
@@ -235,7 +241,7 @@ export default function Dashboard() {
               data-testid="button-export"
             >
               <Download className="mr-2 h-4 w-4" />
-              Export
+              {t('common.save')}
             </Button>
           </div>
         </div>
