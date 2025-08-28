@@ -46,6 +46,39 @@ interface Scenario {
   updatedAt: Date;
 }
 
+interface ScenarioNPC {
+  id: string;
+  scenarioId: string;
+  name: string;
+  role: string;
+  description: string;
+  location: string | null;
+  faction: string | null;
+  importance: 'minor' | 'major' | 'critical';
+  status: 'alive' | 'dead' | 'missing' | 'unknown';
+}
+
+interface ScenarioQuest {
+  id: string;
+  scenarioId: string;
+  title: string;
+  description: string;
+  status: 'not_started' | 'active' | 'completed' | 'failed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  rewards: string | null;
+  requirements: string | null;
+}
+
+interface EnvironmentalCondition {
+  id: string;
+  scenarioId: string;
+  name: string;
+  description: string;
+  severity: 'mild' | 'moderate' | 'severe' | 'extreme';
+  affectedRegions: string[];
+  duration: string | null;
+}
+
 interface Region {
   id: string;
   scenarioId: string | null;
@@ -110,11 +143,47 @@ const COMMON_RESOURCES = [
   'materials', 'information', 'labor', 'transportation'
 ];
 
+const NPC_ROLES = [
+  { value: 'leader', label: 'Leader', icon: '👑' },
+  { value: 'merchant', label: 'Merchant', icon: '💼' },
+  { value: 'warrior', label: 'Warrior', icon: '⚔️' },
+  { value: 'scientist', label: 'Scientist', icon: '🔬' },
+  { value: 'engineer', label: 'Engineer', icon: '🔧' },
+  { value: 'informant', label: 'Informant', icon: '🕵️' },
+  { value: 'medic', label: 'Medic', icon: '🏥' },
+  { value: 'guide', label: 'Guide', icon: '🗺️' },
+  { value: 'survivor', label: 'Survivor', icon: '🏃' },
+  { value: 'antagonist', label: 'Antagonist', icon: '💀' }
+];
+
+const IMPORTANCE_LEVELS = [
+  { value: 'minor', label: 'Minor', color: 'secondary' },
+  { value: 'major', label: 'Major', color: 'default' },
+  { value: 'critical', label: 'Critical', color: 'destructive' }
+];
+
+const QUEST_PRIORITIES = [
+  { value: 'low', label: 'Low', color: 'secondary' },
+  { value: 'medium', label: 'Medium', color: 'default' },
+  { value: 'high', label: 'High', color: 'outline' },
+  { value: 'critical', label: 'Critical', color: 'destructive' }
+];
+
+const CONDITION_SEVERITIES = [
+  { value: 'mild', label: 'Mild', color: 'default' },
+  { value: 'moderate', label: 'Moderate', color: 'secondary' },
+  { value: 'severe', label: 'Severe', color: 'outline' },
+  { value: 'extreme', label: 'Extreme', color: 'destructive' }
+];
+
 export function ScenarioBuilder() {
   // State management
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [npcs, setNpcs] = useState<ScenarioNPC[]>([]);
+  const [quests, setQuests] = useState<ScenarioQuest[]>([]);
+  const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalCondition[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -140,10 +209,43 @@ export function ScenarioBuilder() {
     politicalStance: 'neutral'
   });
   
+  const [npcForm, setNpcForm] = useState({
+    name: '',
+    role: 'survivor',
+    description: '',
+    location: '',
+    faction: '',
+    importance: 'minor',
+    status: 'alive'
+  });
+  
+  const [questForm, setQuestForm] = useState({
+    title: '',
+    description: '',
+    status: 'not_started',
+    priority: 'medium',
+    rewards: '',
+    requirements: ''
+  });
+  
+  const [conditionForm, setConditionForm] = useState({
+    name: '',
+    description: '',
+    severity: 'moderate',
+    affectedRegions: [],
+    duration: ''
+  });
+  
   const [showCreateScenario, setShowCreateScenario] = useState(false);
   const [showEditScenario, setShowEditScenario] = useState(false);
   const [showCreateRegion, setShowCreateRegion] = useState(false);
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
+  const [showCreateNPC, setShowCreateNPC] = useState(false);
+  const [editingNPC, setEditingNPC] = useState<ScenarioNPC | null>(null);
+  const [showCreateQuest, setShowCreateQuest] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<ScenarioQuest | null>(null);
+  const [showCreateCondition, setShowCreateCondition] = useState(false);
+  const [editingCondition, setEditingCondition] = useState<EnvironmentalCondition | null>(null);
 
   // API Functions
   const fetchScenarios = async () => {
@@ -660,9 +762,12 @@ export function ScenarioBuilder() {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-3 bg-slate-700">
+                    <TabsList className="grid w-full grid-cols-6 bg-slate-700">
                       <TabsTrigger value="overview" className="text-white">Overview</TabsTrigger>
-                      <TabsTrigger value="regions" className="text-white">Regions</TabsTrigger>
+                      <TabsTrigger value="regions" className="text-white">Regions ({regions.length})</TabsTrigger>
+                      <TabsTrigger value="npcs" className="text-white">NPCs ({npcs.length})</TabsTrigger>
+                      <TabsTrigger value="quests" className="text-white">Quests ({quests.length})</TabsTrigger>
+                      <TabsTrigger value="environment" className="text-white">Environment ({environmentalConditions.length})</TabsTrigger>
                       <TabsTrigger value="library" className="text-white">Library</TabsTrigger>
                     </TabsList>
                     
@@ -814,6 +919,193 @@ export function ScenarioBuilder() {
                       </div>
                     </TabsContent>
                     
+                    <TabsContent value="npcs" className="mt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Non-Player Characters</h3>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowCreateNPC(true)}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add NPC
+                          </Button>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                          {npcs.map((npc) => (
+                            <Card key={npc.id} className="bg-slate-700/50 border-slate-600">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="font-semibold text-white">{npc.name}</h4>
+                                      <Badge variant={IMPORTANCE_LEVELS.find(l => l.value === npc.importance)?.color as any}>
+                                        {NPC_ROLES.find(r => r.value === npc.role)?.icon} {NPC_ROLES.find(r => r.value === npc.role)?.label}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {npc.status}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-slate-300 text-sm mb-2">{npc.description}</p>
+                                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                                      {npc.location && (
+                                        <span>📍 {npc.location}</span>
+                                      )}
+                                      {npc.faction && (
+                                        <span>⚔️ {npc.faction}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingNPC(npc)}
+                                      className="text-slate-400 hover:text-white"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {npcs.length === 0 && (
+                            <div className="text-center py-8 text-slate-400">
+                              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>No NPCs created yet</p>
+                              <p className="text-sm">Add characters to bring your world to life</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="quests" className="mt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Quests & Objectives</h3>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowCreateQuest(true)}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Quest
+                          </Button>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                          {quests.map((quest) => (
+                            <Card key={quest.id} className="bg-slate-700/50 border-slate-600">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="font-semibold text-white">{quest.title}</h4>
+                                      <Badge variant={QUEST_PRIORITIES.find(p => p.value === quest.priority)?.color as any}>
+                                        {quest.priority}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {quest.status.replace('_', ' ')}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-slate-300 text-sm mb-2">{quest.description}</p>
+                                    <div className="text-xs text-slate-400 space-y-1">
+                                      {quest.requirements && (
+                                        <div><strong>Requirements:</strong> {quest.requirements}</div>
+                                      )}
+                                      {quest.rewards && (
+                                        <div><strong>Rewards:</strong> {quest.rewards}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingQuest(quest)}
+                                      className="text-slate-400 hover:text-white"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {quests.length === 0 && (
+                            <div className="text-center py-8 text-slate-400">
+                              <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>No quests defined yet</p>
+                              <p className="text-sm">Create objectives to guide your story</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="environment" className="mt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Environmental Conditions</h3>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowCreateCondition(true)}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Condition
+                          </Button>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                          {environmentalConditions.map((condition) => (
+                            <Card key={condition.id} className="bg-slate-700/50 border-slate-600">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="font-semibold text-white">{condition.name}</h4>
+                                      <Badge variant={CONDITION_SEVERITIES.find(s => s.value === condition.severity)?.color as any}>
+                                        {condition.severity}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-slate-300 text-sm mb-2">{condition.description}</p>
+                                    <div className="text-xs text-slate-400 space-y-1">
+                                      {condition.duration && (
+                                        <div><strong>Duration:</strong> {condition.duration}</div>
+                                      )}
+                                      <div><strong>Affected Regions:</strong> {condition.affectedRegions.length} regions</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingCondition(condition)}
+                                      className="text-slate-400 hover:text-white"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {environmentalConditions.length === 0 && (
+                            <div className="text-center py-8 text-slate-400">
+                              <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>No environmental conditions set</p>
+                              <p className="text-sm">Add weather, hazards, or climate effects</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TabsContent>
+
                     <TabsContent value="library" className="mt-6">
                       <InteractiveLibrary showTitle={false} />
                     </TabsContent>
