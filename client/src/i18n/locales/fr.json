@@ -3,6 +3,44 @@
     "title": "Assistant MJ IA - Édition Wasteland",
     "subtitle": "Créateur de Sessions RPG Dieselpunk"
   },
+  "world": {
+    "title": "Le Monde en 2200 - Héritage des Deux Brasiers",
+    "timeline": {
+      "2050": "Première Guerre Nucléaire - L'effondrement des grandes puissances. Hiver nucléaire, survie dans les enclaves.",
+      "2100": "Seconde Guerre Nucléaire - Course au carburant et à l'eau dégénérant en conflit mondial. Zones vitrifiées.",
+      "2200": "Le Temps des Cités-États - Bastions de pouvoir contrôlant chacun une ressource clé pour la survie."
+    },
+    "environment": {
+      "climate": "Chaleur étouffante dépassant 50°C, tempêtes de sable radioactif",
+      "deserts": "Déserts nucléaires vitrifiés, déserts de sel d'anciennes mers, dunes engloutissant les ruines",
+      "fauna": "Insectes géants, carnassiers mutants, meutes de chiens sauvages redoutés",
+      "flora": "Cactus stockant l'eau radioactive, lianes carnivores, champignons phosphorescents"
+    },
+    "dailyLife": {
+      "currency": "Carburant, eau, nourriture et munitions sont la véritable monnaie",
+      "machines": "Véhicules blindés, trains forteresses, dirigeables. Moteurs vénérés comme des dieux de métal",
+      "society": "Esclavage, combats d'arènes, exécutions publiques. La loi est celle des armes",
+      "religion": "Cultes vouant une foi absolue aux machines, moteurs diesel et réacteurs"
+    },
+    "threats": {
+      "raiders": "Bandes organisées sur véhicules rapides attaquant les convois",
+      "radiation": "Maladies dégénératives, malformations, cancers fulgurants",
+      "mutants": "Humains et animaux déformés, rejetés ou utilisés comme soldats esclaves",
+      "storms": "Orages de sable, pluies acides, blizzards de sel",
+      "cityStates": "Lutte pour la domination menaçant d'une troisième guerre mondiale"
+    },
+    "politics": {
+      "balance": "Chaque cité-État contrôle une ressource vitale → équilibre fragile",
+      "alliances": "Alliances temporaires et trahisons courantes",
+      "militias": "Servent de police, d'armée et de garde-frontière",
+      "underworld": "Espions, mercenaires et contrebandiers prospèrent",
+      "myths": {
+        "ancientIsle": "L'Île des Anciens : un paradis intact, mirage ou réalité",
+        "omegaBunker": "Le Bunker Oméga : cité souterraine mythique plus avancée que toutes"
+      }
+    },
+    "essence": "Une poudrière où chaleur, radiations, famine et fanatismes règnent. Chaque choix peut faire basculer la balance entre survie, loyauté et trahison."
+  },
   "navigation": {
     "sessions": "Sessions",
     "scenarios": "Scénarios", 

@@ -3,6 +3,44 @@
     "title": "AI GM Assistant - Wasteland Edition",
     "subtitle": "Dieselpunk RPG Session Creator"
   },
+  "world": {
+    "title": "The World in 2200 - Legacy of the Two Braziers",
+    "timeline": {
+      "2050": "First Nuclear War - Collapse of great powers. Nuclear winter, survival in enclaves.",
+      "2100": "Second Nuclear War - Race for fuel and water degenerates into global conflict. Vitrified zones.",
+      "2200": "The Time of City-States - Bastions of power each controlling a key resource for survival."
+    },
+    "environment": {
+      "climate": "Suffocating heat exceeding 50°C, radioactive sandstorms",
+      "deserts": "Vitrified nuclear deserts, salt deserts from dried seas, dunes swallowing ruins",
+      "fauna": "Giant insects, mutant predators, feared packs of wild dogs",
+      "flora": "Cacti storing radioactive water, carnivorous vines, phosphorescent mushrooms"
+    },
+    "dailyLife": {
+      "currency": "Fuel, water, food and ammunition are the true currency",
+      "machines": "Armored vehicles, fortress trains, half-destroyed airships. Engines worshipped as metal gods",
+      "society": "Slavery, arena fights, public executions. The law of weapons",
+      "religion": "Cults with absolute faith in machines, diesel engines and reactors"
+    },
+    "threats": {
+      "raiders": "Organized gangs on fast vehicles attacking convoys",
+      "radiation": "Degenerative diseases, malformations, fulminant cancers",
+      "mutants": "Deformed humans and animals, rejected or used as slave soldiers",
+      "storms": "Sandstorms, acid rain, salt blizzards",
+      "cityStates": "Struggle for domination threatening a third world war"
+    },
+    "politics": {
+      "balance": "Each city-state controls a vital resource → fragile balance",
+      "alliances": "Temporary alliances and betrayals are common",
+      "militias": "Serve as police, army and border guards",
+      "underworld": "Spies, mercenaries and smugglers thrive",
+      "myths": {
+        "ancientIsle": "The Ancient Isle: an intact paradise, mirage or reality",
+        "omegaBunker": "Omega Bunker: mythical underground city more advanced than all others"
+      }
+    },
+    "essence": "A powder keg where heat, radiation, famine and fanaticism reign. Every choice can tip the balance between survival, loyalty and betrayal."
+  },
   "navigation": {
     "sessions": "Sessions",
     "scenarios": "Scenarios",
