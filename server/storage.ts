@@ -249,7 +249,7 @@ export class MemStorage implements IStorage {
    * This ensures the Mediterranean Basin world is always available
    */
   private initializeDefaultContent(): void {
-    const defaultScenarioId = 'legacy-two-braziers-mediterranean';
+    const defaultScenarioId = '550e8400-e29b-41d4-a716-446655440000'; // Fixed UUID for default scenario
     
     // Create the default scenario
     const defaultScenario: Scenario = {
@@ -270,7 +270,7 @@ export class MemStorage implements IStorage {
     // Create the 10 Mediterranean city-states
     const defaultRegions = [
       {
-        id: 'cite-medicale',
+        id: '550e8400-e29b-41d4-a716-446655440001',
         scenarioId: defaultScenarioId,
         name: 'Cité Médicale',
         type: 'city' as const,
@@ -284,7 +284,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-carburant',
+        id: '550e8400-e29b-41d4-a716-446655440002',
         scenarioId: defaultScenarioId,
         name: 'Cité du Carburant',
         type: 'settlement' as const,
@@ -298,7 +298,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-industrielle',
+        id: '550e8400-e29b-41d4-a716-446655440003',
         scenarioId: defaultScenarioId,
         name: 'Cité Industrielle',
         type: 'settlement' as const,
@@ -312,7 +312,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-eau-alimentation',
+        id: '550e8400-e29b-41d4-a716-446655440004',
         scenarioId: defaultScenarioId,
         name: 'Cité de l\'Eau & Alimentation',
         type: 'fortress' as const,
@@ -326,7 +326,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-divertissement',
+        id: '550e8400-e29b-41d4-a716-446655440005',
         scenarioId: defaultScenarioId,
         name: 'Cité du Divertissement',
         type: 'trade_hub' as const,
@@ -340,7 +340,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'nuke-city',
+        id: '550e8400-e29b-41d4-a716-446655440006',
         scenarioId: defaultScenarioId,
         name: 'Nuke City',
         type: 'city' as const,
@@ -354,7 +354,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-metaux-recyclage',
+        id: '550e8400-e29b-41d4-a716-446655440007',
         scenarioId: defaultScenarioId,
         name: 'Cité des Métaux & Recyclage',
         type: 'settlement' as const,
@@ -368,7 +368,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'cite-armement-defense',
+        id: '550e8400-e29b-41d4-a716-446655440008',
         scenarioId: defaultScenarioId,
         name: 'Cité de l\'Armement & Défense',
         type: 'fortress' as const,
@@ -382,7 +382,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'ile-des-anciens',
+        id: '550e8400-e29b-41d4-a716-446655440009',
         scenarioId: defaultScenarioId,
         name: 'L\'Île des Anciens',
         type: 'city' as const,
@@ -396,7 +396,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       {
-        id: 'bunker-omega',
+        id: '550e8400-e29b-41d4-a716-446655440010',
         scenarioId: defaultScenarioId,
         name: 'Bunker Oméga',
         type: 'fortress' as const,
