@@ -361,8 +361,7 @@ export default function Dashboard() {
                 <div className="card-compact">
                   <TimelineManager
                     sessionId={session.id}
-                    currentPhase={session.currentPhase}
-                    onPhaseChange={(phase) => updateSessionMutation.mutate({ currentPhase: phase })}
+                    events={timelineEvents as TimelineEventData[]}
                   />
                 </div>
               )}

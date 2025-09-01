@@ -32,7 +32,7 @@ export function TimelineManager({ sessionId, events }: TimelineManagerProps) {
       const response = await apiRequest('POST', '/api/timeline-events', {
         sessionId,
         ...eventData,
-        orderIndex: events?.length || 0,
+        orderIndex: (events && events.length) || 0,
         isCompleted: 'false'
       });
       return response.json();

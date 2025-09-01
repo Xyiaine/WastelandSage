@@ -213,16 +213,17 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="heading-minimal flex items-center gap-3">
-          <Navigation className="h-5 w-5 text-toxic" />
-          Session Tracker
-        </h2>
-        <p className="text-minimal mt-1">
-          Monitor session progress, player status, and scenario position
-        </p>
-      </div>
+    <Card className="glass-card">
+      <CardContent className="space-y-6">
+        <div>
+          <h2 className="heading-minimal flex items-center gap-3">
+            <Navigation className="h-5 w-5 text-toxic" />
+            Session Tracker
+          </h2>
+          <p className="text-minimal mt-1">
+            Monitor session progress, player status, and scenario position
+          </p>
+        </div>
       
       <div className="space-y-6">
         {/* Session Controls */}
@@ -428,6 +429,7 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
               )}
             </div>
           </div>
+        </div>
         </div>
       </CardContent>
     </Card>

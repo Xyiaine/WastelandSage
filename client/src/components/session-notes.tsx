@@ -281,6 +281,7 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
           Save
         </Button>
       </div>
+      <Card>
       <CardContent>
         {/* Search Bar */}
         <div className="mb-6">
@@ -297,13 +298,13 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3 glass-card rounded-lg p-1">
-            <TabsTrigger value="notes" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
+            <TabsTrigger value="notes" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
               Notes ({filteredNotes.length})
             </TabsTrigger>
-            <TabsTrigger value="choices" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
+            <TabsTrigger value="choices" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
               Choices ({filteredChoices.length})
             </TabsTrigger>
-            <TabsTrigger value="progress" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
+            <TabsTrigger value="progress" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
               Progress ({filteredProgress.length})
             </TabsTrigger>
           </TabsList>
@@ -324,7 +325,8 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
 
               {/* New Note Form */}
               {showNewNoteForm && (
-                <div className="glass-card rounded-xl p-6 space-y-4">
+                <Card className="bg-slate-700/50 border-slate-600">
+                  <CardContent className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-white">Type</Label>
@@ -722,5 +724,6 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
         </Tabs>
       </CardContent>
     </Card>
+    </div>
   );
 }

@@ -227,7 +227,7 @@
   }
   
   .btn-ghost {
-    @apply bg-transparent border border-steel-light text-foreground hover:bg-steel-light/20 hover:border-rust/50;
+    @apply bg-transparent border border-steel-lighter text-foreground hover:bg-steel-500/20 hover:border-rust-400;
   }
   
   /* Clean Node Styles */
@@ -253,12 +253,12 @@
   
   /* Minimal Connection Lines */
   .connection-line {
-    @apply stroke-steel-lighter/40 stroke-1 opacity-60;
+    @apply stroke-steel-400/40 stroke-1 opacity-60;
   }
   
   /* Input Styling */
   .input-minimal {
-    @apply bg-steel-light/30 border border-steel-light/50 text-foreground rounded-lg px-4 py-2 focus:border-rust/50 focus:ring-1 focus:ring-rust/25 transition-colors;
+    @apply bg-steel-400/30 border border-steel-400/50 text-foreground rounded-lg px-4 py-2 focus:border-rust-500/50 focus:ring-1 focus:ring-rust-500/25 transition-colors;
   }
   
   /* Card Variants */
