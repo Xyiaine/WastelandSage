@@ -750,6 +750,16 @@ export function ScenarioBuilder() {
               <Button
                 size="sm"
                 variant="outline"
+                onClick={() => window.location.href = '/'}
+                className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Back to Session
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => setShowTemplateSelector(true)}
                 className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
               >
