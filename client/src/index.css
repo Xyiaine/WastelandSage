@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Better text handling for French content */
+.text-wrap {
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Improved spacing for French text */
+[lang="fr"] {
+  word-spacing: 0.1em;
+  line-height: 1.6;
+}
+
+/* Prevent text overflow in cards and containers */
+.card-content p,
+.card-description {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Better handling of long French words */
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 :root {
   --background: hsl(0 0% 10%);
   --foreground: hsl(0 0% 91%);
