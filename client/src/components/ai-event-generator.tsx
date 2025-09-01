@@ -102,10 +102,10 @@ export function AiEventGenerator({
           sessionId,
           type: suggestedNode.type,
           name: suggestedNode.name,
-          description: suggestedNode.description,
-          properties: suggestedNode.properties,
-          x: Math.random() * 400,
-          y: Math.random() * 350
+          description: suggestedNode.description || '',
+          properties: suggestedNode.properties || {},
+          x: Math.round(Math.random() * 400),
+          y: Math.round(Math.random() * 350)
         });
       }
 
