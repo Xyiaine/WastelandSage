@@ -2558,8 +2558,8 @@ export function ScenarioBuilder() {
                         description: editingQuest?.description ?? questForm.description,
                         status: (editingQuest?.status ?? questForm.status) as 'not_started' | 'active' | 'completed' | 'failed',
                         priority: (editingQuest?.priority ?? questForm.priority) as 'low' | 'medium' | 'high' | 'critical',
-                        rewards: editingQuest?.rewards ?? questForm.rewards || null,
-                        requirements: editingQuest?.requirements ?? questForm.requirements || null,
+                        rewards: (editingQuest?.rewards ?? questForm.rewards) || null,
+                        requirements: (editingQuest?.requirements ?? questForm.requirements) || null,
                         createdAt: new Date()
                       };
 

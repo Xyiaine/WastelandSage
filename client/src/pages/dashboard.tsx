@@ -14,10 +14,12 @@ import { CreatorSpecificControls } from "@/components/creator-specific-controls"
 import { NPCGenerator } from "@/components/npc-generator";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
-import { Skull, Download, Save, Undo, HelpCircle, MapPin } from "lucide-react";
+import { Skull, Download, Save, Undo, HelpCircle, MapPin, Link as LinkIcon } from "lucide-react";
 import { Link } from "wouter";
 import type { CreatorMode, AiMode, SessionData, NodeData, ConnectionData, TimelineEventData } from "@/lib/types";
 import type { Session, Node, Connection, TimelineEvent } from "@shared/schema";
+import { SessionScenarioLinker } from "@/components/session-scenario-linker";
+import { LinkedScenariosPanel } from "@/components/linked-scenarios-panel";
 
 export default function Dashboard() {
   const { sessionId } = useParams();
@@ -105,7 +107,7 @@ export default function Dashboard() {
   // Update session duration timer
   useEffect(() => {
     if (!session) return;
-    
+
     const interval = setInterval(() => {
       setSessionDuration(prev => prev + 1);
     }, 60000); // Update every minute
@@ -189,25 +191,25 @@ export default function Dashboard() {
               <p className="text-sm text-gray-400 font-mono">{t('app.subtitle')}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Language Switcher */}
             <LanguageSwitcher />
-            
+
             {/* AI Status Indicator */}
             <div className="flex items-center space-x-2 bg-steel-700 px-3 py-2 rounded-lg">
               <div className="w-2 h-2 bg-toxic-400 rounded-full animate-pulse"></div>
               <span className="text-sm font-mono">AI Online</span>
             </div>
-            
+
             {/* Session Timer */}
             <div className="bg-steel-700 px-3 py-2 rounded-lg font-mono text-sm">
               <span>{formatDuration(sessionDuration + (session?.duration || 0))}</span>
             </div>
-            
+
             {/* Scenario Builder Button */}
             <Link href="/scenarios">
-              <Button 
+              <Button
                 className="industrial-button px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
                 data-testid="button-scenario-builder"
                 onClick={(e) => {
@@ -219,9 +221,9 @@ export default function Dashboard() {
                 {t('navigation.scenarios')}
               </Button>
             </Link>
-            
+
             {/* Quick Export Button */}
-            <Button 
+            <Button
               onClick={() => {
                 const link = document.createElement('a');
                 link.href = '/api/scenarios/export?userId=demo-user';
@@ -236,9 +238,9 @@ export default function Dashboard() {
               <Download className="mr-2 h-4 w-4" />
               {t('scenario.export')}
             </Button>
-            
+
             {/* Export Button */}
-            <Button 
+            <Button
               onClick={handleExportSession}
               className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
               disabled={!session}
@@ -247,16 +249,34 @@ export default function Dashboard() {
               <Download className="mr-2 h-4 w-4" />
               {t('common.save')}
             </Button>
+
+            {/* Quick Session-Scenario Link Button */}
+            {session && (
+              <Button
+                onClick={() => {
+                  // Scroll to session-scenario linker component
+                  const linkerElement = document.querySelector('[data-component="session-scenario-linker"]');
+                  if (linkerElement) {
+                    linkerElement.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
+                data-testid="button-manage-scenarios"
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Link Scenarios
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 pb-8">
-        
+
         {/* Creator Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <CreatorModeToggle 
-            currentMode={creatorMode} 
+          <CreatorModeToggle
+            currentMode={creatorMode}
             onModeChange={handleCreatorModeChange}
           />
         </div>
@@ -276,88 +296,99 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            
-            {/* Left Panel: Session Builder & Pacing Controls */}
-            <div className="xl:col-span-1 space-y-6">
-              
+
+            {/* Left Column - Session Management */}
+            <div className="space-y-6">
+              {/* Session Builder */}
               {session && (
-                <SessionBuilder 
+                <SessionBuilder
                   session={session as SessionData}
                   onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
                 />
               )}
-              
-              {currentSessionId && (
-                <PacingControls 
-                  sessionId={currentSessionId}
-                  creatorMode={creatorMode}
-                />
+
+              {/* Linked Scenarios Quick Access */}
+              {session && (
+                <LinkedScenariosPanel sessionId={session.id} />
               )}
-              
-              {currentSessionId && (
-                <AiEventGenerator 
-                  sessionId={currentSessionId}
-                  creatorMode={creatorMode}
-                  aiMode={(session?.aiMode as AiMode) || 'continuity'}
-                  nodes={nodes as NodeData[]}
-                  timelineEvents={timelineEvents as TimelineEventData[]}
+
+              {/* Timeline Manager */}
+              {session && (
+                <TimelineManager
+                  sessionId={session.id}
+                  currentPhase={session.currentPhase}
+                  onPhaseChange={(phase) => updateSessionMutation.mutate({ currentPhase: phase })}
                 />
               )}
             </div>
-            
-            {/* Center Panel: Node Graph Visualization */}
+
+            {/* Center Column - Node Graph */}
             <div className="xl:col-span-1">
               {currentSessionId && (
-                <NodeGraph 
+                <NodeGraph
                   sessionId={currentSessionId}
                   nodes={nodes as NodeData[]}
                   connections={connections as ConnectionData[]}
                 />
               )}
             </div>
-            
-            {/* Right Panel: Timeline & Event History */}
-            <div className="xl:col-span-1 space-y-6">
-              
-              {currentSessionId && (
-                <TimelineManager 
-                  sessionId={currentSessionId}
-                  events={timelineEvents as TimelineEventData[]}
-                />
-              )}
-              
-              <CreatorSpecificControls 
-                creatorMode={creatorMode}
-                sessionId={currentSessionId}
+
+            {/* Right Column - AI Tools & Controls */}
+            <div className="space-y-6">
+              {/* Session-Scenario Linker */}
+              <SessionScenarioLinker
+                currentSessionId={session?.id}
+                onLinkedScenariosUpdate={(scenarios) => {
+                  console.log('Linked scenarios updated:', scenarios);
+                }}
               />
-              
-              {currentSessionId && (
-                <NPCGenerator 
-                  creatorMode={creatorMode}
-                  sessionId={currentSessionId}
-                  scenarioId="legacy-two-braziers-mediterranean"
-                />
-              )}
+
+              {/* Creator Mode Toggle */}
+              <CreatorModeToggle
+                currentMode={creatorMode}
+                onModeChange={handleCreatorModeChange}
+              />
+
+              {/* Creator-Specific Controls */}
+              <CreatorSpecificControls
+                session={session}
+                onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
+              />
+
+              {/* Pacing Controls */}
+              <PacingControls
+                sessionId={currentSessionId}
+                creatorMode={creatorMode}
+              />
+
+              {/* AI Event Generator */}
+              <AiEventGenerator
+                sessionId={currentSessionId}
+                creatorMode={creatorMode}
+                aiMode={(session?.aiMode as AiMode) || 'continuity'}
+                nodes={nodes as NodeData[]}
+                timelineEvents={timelineEvents as TimelineEventData[]}
+              />
             </div>
           </div>
         )}
       </div>
-      
+
       {/* Floating Action Menu */}
       <div className="fixed bottom-6 right-6 flex flex-col space-y-3">
-        <Button 
+        <Button
           className="industrial-button w-12 h-12 rounded-full flex items-center justify-center rust-glow"
           data-testid="button-quick-save"
         >
           <Save className="text-rust-400 h-5 w-5" />
         </Button>
-        <Button 
+        <Button
           className="industrial-button w-12 h-12 rounded-full flex items-center justify-center"
           data-testid="button-undo"
         >
           <Undo className="text-gray-400 h-5 w-5" />
         </Button>
-        <Button 
+        <Button
           className="industrial-button w-12 h-12 rounded-full flex items-center justify-center"
           data-testid="button-help"
         >
