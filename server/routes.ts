@@ -19,7 +19,20 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, StorageError, NotFoundError, ValidationError, ReferentialIntegrityError } from "./storage";
-import { insertSessionSchema, insertNodeSchema, insertConnectionSchema, insertTimelineEventSchema, insertScenarioSchema, insertRegionSchema, insertScenarioSessionSchema } from "@shared/schema";
+import { 
+  insertSessionSchema, 
+  insertNodeSchema, 
+  insertConnectionSchema, 
+  insertTimelineEventSchema, 
+  insertScenarioSchema, 
+  insertRegionSchema, 
+  insertScenarioSessionSchema,
+  updatedInsertScenarioNPCSchema,
+  insertScenarioQuestSchema,
+  insertEnvironmentalConditionSchema,
+  insertPlayerCharacterSchema,
+  insertSessionPlayerSchema
+} from "@shared/schema";
 import { generateEvent, generateNPC, type EventGenerationContext, type NPCGenerationContext, AIServiceError } from "./services/openai";
 import { exportScenariosToExcel, importScenariosFromExcel, validateImportedData } from "./services/excel";
 import { ZodError } from "zod";
@@ -970,6 +983,274 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * SCENARIO NPC MANAGEMENT ENDPOINTS
+   */
+
+  // Get NPCs for a scenario
+  app.get("/api/scenarios/:scenarioId/npcs", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.scenarioId;
+    
+    try {
+      const npcs = await storage.getScenarioNPCs(scenarioId);
+      logRequest('GET', `/api/scenarios/${scenarioId}/npcs`, startTime, 200, `Retrieved ${npcs.length} NPCs`);
+      res.json(npcs);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/scenarios/${scenarioId}/npcs`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create scenario NPC
+  app.post("/api/scenario-npcs", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      const data = updatedInsertScenarioNPCSchema.parse(req.body);
+      const npc = await storage.createScenarioNPC(data);
+      logRequest('POST', '/api/scenario-npcs', startTime, 201, `Created NPC: ${npc.name}`);
+      res.status(201).json(npc);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('POST', '/api/scenario-npcs', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Update scenario NPC
+  app.patch("/api/scenario-npcs/:id", async (req, res) => {
+    const startTime = Date.now();
+    const npcId = req.params.id;
+    
+    try {
+      const npc = await storage.updateScenarioNPC(npcId, req.body);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}`, startTime, 200, `Updated NPC: ${npc.name}`);
+      res.json(npc);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Delete scenario NPC
+  app.delete("/api/scenario-npcs/:id", async (req, res) => {
+    const startTime = Date.now();
+    const npcId = req.params.id;
+    
+    try {
+      await storage.deleteScenarioNPC(npcId);
+      logRequest('DELETE', `/api/scenario-npcs/${npcId}`, startTime, 204, 'NPC deleted');
+      res.status(204).send();
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('DELETE', `/api/scenario-npcs/${npcId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Suppress scenario NPC
+  app.patch("/api/scenario-npcs/:id/suppress", async (req, res) => {
+    const startTime = Date.now();
+    const npcId = req.params.id;
+    
+    try {
+      const npc = await storage.suppressScenarioNPC(npcId);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}/suppress`, startTime, 200, `Suppressed NPC: ${npc.name}`);
+      res.json(npc);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}/suppress`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Restore scenario NPC
+  app.patch("/api/scenario-npcs/:id/restore", async (req, res) => {
+    const startTime = Date.now();
+    const npcId = req.params.id;
+    
+    try {
+      const npc = await storage.restoreScenarioNPC(npcId);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}/restore`, startTime, 200, `Restored NPC: ${npc.name}`);
+      res.json(npc);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('PATCH', `/api/scenario-npcs/${npcId}/restore`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
+   * PLAYER CHARACTER MANAGEMENT ENDPOINTS
+   */
+
+  // Get user characters
+  app.get("/api/users/:userId/characters", async (req, res) => {
+    const startTime = Date.now();
+    const userId = req.params.userId;
+    
+    try {
+      const characters = await storage.getUserCharacters(userId);
+      logRequest('GET', `/api/users/${userId}/characters`, startTime, 200, `Retrieved ${characters.length} characters`);
+      res.json(characters);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/users/${userId}/characters`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Get session characters
+  app.get("/api/sessions/:sessionId/characters", async (req, res) => {
+    const startTime = Date.now();
+    const sessionId = req.params.sessionId;
+    
+    try {
+      const characters = await storage.getSessionCharacters(sessionId);
+      logRequest('GET', `/api/sessions/${sessionId}/characters`, startTime, 200, `Retrieved ${characters.length} characters`);
+      res.json(characters);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/sessions/${sessionId}/characters`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create player character
+  app.post("/api/characters", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      const data = insertPlayerCharacterSchema.parse(req.body);
+      const character = await storage.createPlayerCharacter(data);
+      logRequest('POST', '/api/characters', startTime, 201, `Created character: ${character.name}`);
+      res.status(201).json(character);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('POST', '/api/characters', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Update player character
+  app.patch("/api/characters/:id", async (req, res) => {
+    const startTime = Date.now();
+    const characterId = req.params.id;
+    
+    try {
+      const character = await storage.updatePlayerCharacter(characterId, req.body);
+      logRequest('PATCH', `/api/characters/${characterId}`, startTime, 200, `Updated character: ${character.name}`);
+      res.json(character);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('PATCH', `/api/characters/${characterId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Delete player character
+  app.delete("/api/characters/:id", async (req, res) => {
+    const startTime = Date.now();
+    const characterId = req.params.id;
+    
+    try {
+      await storage.deletePlayerCharacter(characterId);
+      logRequest('DELETE', `/api/characters/${characterId}`, startTime, 204, 'Character deleted');
+      res.status(204).send();
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('DELETE', `/api/characters/${characterId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
+   * SESSION PLAYER MANAGEMENT ENDPOINTS
+   */
+
+  // Get session players
+  app.get("/api/sessions/:sessionId/players", async (req, res) => {
+    const startTime = Date.now();
+    const sessionId = req.params.sessionId;
+    
+    try {
+      const players = await storage.getSessionPlayers(sessionId);
+      logRequest('GET', `/api/sessions/${sessionId}/players`, startTime, 200, `Retrieved ${players.length} players`);
+      res.json(players);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/sessions/${sessionId}/players`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Add player to session
+  app.post("/api/sessions/:sessionId/players", async (req, res) => {
+    const startTime = Date.now();
+    const sessionId = req.params.sessionId;
+    
+    try {
+      const data = insertSessionPlayerSchema.parse({ ...req.body, sessionId });
+      const player = await storage.addPlayerToSession(data);
+      logRequest('POST', `/api/sessions/${sessionId}/players`, startTime, 201, `Added player: ${player.userId}`);
+      res.status(201).json(player);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('POST', `/api/sessions/${sessionId}/players`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Update session player
+  app.patch("/api/session-players/:id", async (req, res) => {
+    const startTime = Date.now();
+    const playerId = req.params.id;
+    
+    try {
+      const player = await storage.updateSessionPlayer(playerId, req.body);
+      logRequest('PATCH', `/api/session-players/${playerId}`, startTime, 200, `Updated player: ${player.userId}`);
+      res.json(player);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('PATCH', `/api/session-players/${playerId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Remove player from session
+  app.delete("/api/session-players/:id", async (req, res) => {
+    const startTime = Date.now();
+    const playerId = req.params.id;
+    
+    try {
+      await storage.removePlayerFromSession(playerId);
+      logRequest('DELETE', `/api/session-players/${playerId}`, startTime, 204, 'Player removed from session');
+      res.status(204).send();
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('DELETE', `/api/session-players/${playerId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
    * UTILITY AND MONITORING ENDPOINTS
    * Health checks and system information
    */
@@ -1049,6 +1330,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('  - DELETE /api/scenarios/:scenarioId/sessions/:sessionId/link');
   console.log('  - GET    /api/scenarios/export');
   console.log('  - POST   /api/scenarios/import');
+  console.log('  - GET    /api/scenarios/:scenarioId/npcs');
+  console.log('  - POST   /api/scenario-npcs');
+  console.log('  - PATCH  /api/scenario-npcs/:id');
+  console.log('  - DELETE /api/scenario-npcs/:id');
+  console.log('  - PATCH  /api/scenario-npcs/:id/suppress');
+  console.log('  - PATCH  /api/scenario-npcs/:id/restore');
+  console.log('  - GET    /api/users/:userId/characters');
+  console.log('  - GET    /api/sessions/:sessionId/characters');
+  console.log('  - POST   /api/characters');
+  console.log('  - PATCH  /api/characters/:id');
+  console.log('  - DELETE /api/characters/:id');
+  console.log('  - GET    /api/sessions/:sessionId/players');
+  console.log('  - POST   /api/sessions/:sessionId/players');
+  console.log('  - PATCH  /api/session-players/:id');
+  console.log('  - DELETE /api/session-players/:id');
   console.log('  - GET    /api/health');
   
   return httpServer;

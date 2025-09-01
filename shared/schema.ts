@@ -477,10 +477,105 @@ export const insertEnvironmentalConditionSchema = createInsertSchema(environment
   duration: z.string().max(200).optional(),
 });
 
+/**
+ * Player Characters table - Player character sheets and stats
+ */
+export const playerCharacters = pgTable("player_characters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: varchar("session_id").references(() => sessions.id),
+  name: text("name").notNull(),
+  characterClass: text("character_class").notNull(), // 'scavenger' | 'warrior' | 'engineer' | 'medic' | 'trader' | 'scout'
+  level: integer("level").default(1),
+  background: text("background"),
+  stats: jsonb("stats"), // { strength: 12, dexterity: 15, etc. }
+  skills: jsonb("skills"), // Array of skill names and levels
+  equipment: jsonb("equipment"), // Array of items and quantities
+  notes: text("notes"),
+  isActive: text("is_active").default("true"), // 'true' | 'false'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+/**
+ * Session Players table - Links players to specific game sessions
+ */
+export const sessionPlayers = pgTable("session_players", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").references(() => sessions.id),
+  userId: varchar("user_id").references(() => users.id),
+  characterId: varchar("character_id").references(() => playerCharacters.id),
+  role: text("role").default("player"), // 'player' | 'co_gm' | 'observer'
+  permissions: jsonb("permissions"), // { read: true, write: false, admin: false }
+  joinedAt: timestamp("joined_at").defaultNow(),
+  lastActive: timestamp("last_active").defaultNow(),
+  isOnline: text("is_online").default("false"), // 'true' | 'false'
+});
+
+// Insert schemas for new tables
+export const insertPlayerCharacterSchema = createInsertSchema(playerCharacters).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(1).max(200),
+  characterClass: z.enum(["scavenger", "warrior", "engineer", "medic", "trader", "scout"]),
+  level: z.number().int().min(1).max(20).optional(),
+  background: z.string().max(3000).optional(),
+  stats: z.object({
+    strength: z.number().int().min(1).max(20).optional(),
+    dexterity: z.number().int().min(1).max(20).optional(),
+    constitution: z.number().int().min(1).max(20).optional(),
+    intelligence: z.number().int().min(1).max(20).optional(),
+    wisdom: z.number().int().min(1).max(20).optional(),
+    charisma: z.number().int().min(1).max(20).optional(),
+  }).optional(),
+  skills: z.array(z.string()).optional(),
+  equipment: z.array(z.object({
+    name: z.string(),
+    quantity: z.number().int().min(0).optional(),
+    description: z.string().optional(),
+  })).optional(),
+  notes: z.string().max(5000).optional(),
+  isActive: z.enum(["true", "false"]).optional(),
+});
+
+export const insertSessionPlayerSchema = createInsertSchema(sessionPlayers).omit({
+  id: true,
+  joinedAt: true,
+  lastActive: true,
+}).extend({
+  role: z.enum(["player", "co_gm", "observer"]).optional(),
+  permissions: z.object({
+    read: z.boolean().optional(),
+    write: z.boolean().optional(),
+    admin: z.boolean().optional(),
+  }).optional(),
+  isOnline: z.enum(["true", "false"]).optional(),
+});
+
+// Update the NPC status to include 'suppressed'
+export const updatedInsertScenarioNPCSchema = createInsertSchema(scenarioNPCs).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1).max(200),
+  role: z.enum(["leader", "trader", "scientist", "survivor", "antagonist", "guard", "merchant", "warrior", "engineer", "informant", "medic", "guide"]),
+  description: z.string().max(3000).optional(),
+  location: z.string().max(200).optional(),
+  faction: z.string().max(200).optional(),
+  importance: z.enum(["minor", "major", "critical"]).optional(),
+  status: z.enum(["alive", "dead", "missing", "unknown", "suppressed"]).optional(),
+});
+
 // Types for the new schemas
-export type InsertScenarioNPC = z.infer<typeof insertScenarioNPCSchema>;
+export type InsertScenarioNPC = z.infer<typeof updatedInsertScenarioNPCSchema>;
 export type ScenarioNPC = typeof scenarioNPCs.$inferSelect;
 export type InsertScenarioQuest = z.infer<typeof insertScenarioQuestSchema>;
 export type ScenarioQuest = typeof scenarioQuests.$inferSelect;
 export type InsertEnvironmentalCondition = z.infer<typeof insertEnvironmentalConditionSchema>;
 export type EnvironmentalCondition = typeof environmentalConditions.$inferSelect;
+export type InsertPlayerCharacter = z.infer<typeof insertPlayerCharacterSchema>;
+export type PlayerCharacter = typeof playerCharacters.$inferSelect;
+export type InsertSessionPlayer = z.infer<typeof insertSessionPlayerSchema>;
+export type SessionPlayer = typeof sessionPlayers.$inferSelect;

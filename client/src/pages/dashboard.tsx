@@ -335,6 +335,7 @@ export default function Dashboard() {
                 <NPCGenerator 
                   creatorMode={creatorMode}
                   sessionId={currentSessionId}
+                  scenarioId="legacy-two-braziers-mediterranean"
                 />
               )}
             </div>

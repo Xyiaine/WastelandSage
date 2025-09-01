@@ -31,7 +31,17 @@ import {
   type Region,
   type InsertRegion,
   type ScenarioSession,
-  type InsertScenarioSession
+  type InsertScenarioSession,
+  type ScenarioNPC,
+  type InsertScenarioNPC,
+  type ScenarioQuest,
+  type InsertScenarioQuest,
+  type EnvironmentalCondition,
+  type InsertEnvironmentalCondition,
+  type PlayerCharacter,
+  type InsertPlayerCharacter,
+  type SessionPlayer,
+  type InsertSessionPlayer
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -129,6 +139,44 @@ export interface IStorage {
   getSessionScenarios(sessionId: string): Promise<Scenario[]>;
   getScenarioSessions(scenarioId: string): Promise<Session[]>;
   
+  // Scenario NPC management
+  getScenarioNPCs(scenarioId: string): Promise<ScenarioNPC[]>;
+  getScenarioNPC(id: string): Promise<ScenarioNPC | undefined>;
+  createScenarioNPC(npc: InsertScenarioNPC): Promise<ScenarioNPC>;
+  updateScenarioNPC(id: string, updates: Partial<ScenarioNPC>): Promise<ScenarioNPC>;
+  deleteScenarioNPC(id: string): Promise<void>;
+  suppressScenarioNPC(id: string): Promise<ScenarioNPC>;
+  restoreScenarioNPC(id: string): Promise<ScenarioNPC>;
+  
+  // Scenario Quest management
+  getScenarioQuests(scenarioId: string): Promise<ScenarioQuest[]>;
+  getScenarioQuest(id: string): Promise<ScenarioQuest | undefined>;
+  createScenarioQuest(quest: InsertScenarioQuest): Promise<ScenarioQuest>;
+  updateScenarioQuest(id: string, updates: Partial<ScenarioQuest>): Promise<ScenarioQuest>;
+  deleteScenarioQuest(id: string): Promise<void>;
+  
+  // Environmental Condition management
+  getScenarioConditions(scenarioId: string): Promise<EnvironmentalCondition[]>;
+  getEnvironmentalCondition(id: string): Promise<EnvironmentalCondition | undefined>;
+  createEnvironmentalCondition(condition: InsertEnvironmentalCondition): Promise<EnvironmentalCondition>;
+  updateEnvironmentalCondition(id: string, updates: Partial<EnvironmentalCondition>): Promise<EnvironmentalCondition>;
+  deleteEnvironmentalCondition(id: string): Promise<void>;
+  
+  // Player Character management
+  getUserCharacters(userId: string): Promise<PlayerCharacter[]>;
+  getSessionCharacters(sessionId: string): Promise<PlayerCharacter[]>;
+  getPlayerCharacter(id: string): Promise<PlayerCharacter | undefined>;
+  createPlayerCharacter(character: InsertPlayerCharacter): Promise<PlayerCharacter>;
+  updatePlayerCharacter(id: string, updates: Partial<PlayerCharacter>): Promise<PlayerCharacter>;
+  deletePlayerCharacter(id: string): Promise<void>;
+  
+  // Session Player management
+  getSessionPlayers(sessionId: string): Promise<SessionPlayer[]>;
+  getSessionPlayer(id: string): Promise<SessionPlayer | undefined>;
+  addPlayerToSession(player: InsertSessionPlayer): Promise<SessionPlayer>;
+  updateSessionPlayer(id: string, updates: Partial<SessionPlayer>): Promise<SessionPlayer>;
+  removePlayerFromSession(id: string): Promise<void>;
+  
   // Utility methods for optimization
   getStorageStats(): Promise<{
     users: number;
@@ -138,6 +186,11 @@ export interface IStorage {
     timelineEvents: number;
     scenarios: number;
     regions: number;
+    scenarioNPCs: number;
+    scenarioQuests: number;
+    environmentalConditions: number;
+    playerCharacters: number;
+    sessionPlayers: number;
   }>;
 }
 
@@ -163,6 +216,11 @@ export class MemStorage implements IStorage {
   private scenarios: Map<string, Scenario>;
   private regions: Map<string, Region>;
   private scenarioSessions: Map<string, ScenarioSession>;
+  private scenarioNPCs: Map<string, ScenarioNPC>;
+  private scenarioQuests: Map<string, ScenarioQuest>;
+  private environmentalConditions: Map<string, EnvironmentalCondition>;
+  private playerCharacters: Map<string, PlayerCharacter>;
+  private sessionPlayers: Map<string, SessionPlayer>;
 
   constructor() {
     this.users = new Map();
@@ -173,6 +231,11 @@ export class MemStorage implements IStorage {
     this.scenarios = new Map();
     this.regions = new Map();
     this.scenarioSessions = new Map();
+    this.scenarioNPCs = new Map();
+    this.scenarioQuests = new Map();
+    this.environmentalConditions = new Map();
+    this.playerCharacters = new Map();
+    this.sessionPlayers = new Map();
     
     // Initialize with default Mediterranean Basin scenario
     this.initializeDefaultContent();
@@ -1468,6 +1531,548 @@ export class MemStorage implements IStorage {
    * Performance monitoring and statistics
    */
 
+  /**
+   * SCENARIO NPC METHODS
+   */
+
+  async getScenarioNPCs(scenarioId: string): Promise<ScenarioNPC[]> {
+    try {
+      this.validateId(scenarioId, 'getScenarioNPCs');
+      
+      const npcs = Array.from(this.scenarioNPCs.values()).filter(
+        npc => npc.scenarioId === scenarioId
+      );
+      
+      console.log(`[MemStorage] Found ${npcs.length} NPCs for scenario ${scenarioId}`);
+      return npcs.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting NPCs for scenario '${scenarioId}':`, error);
+      throw error;
+    }
+  }
+
+  async getScenarioNPC(id: string): Promise<ScenarioNPC | undefined> {
+    try {
+      this.validateId(id, 'getScenarioNPC');
+      const npc = this.scenarioNPCs.get(id);
+      
+      if (npc) {
+        console.log(`[MemStorage] Retrieved NPC: ${npc.name} (${npc.role})`);
+      }
+      
+      return npc;
+    } catch (error) {
+      console.error(`[MemStorage] Error getting NPC '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async createScenarioNPC(insertNPC: InsertScenarioNPC): Promise<ScenarioNPC> {
+    try {
+      if (!insertNPC.name || insertNPC.name.trim() === '') {
+        throw new ValidationError('NPC name is required');
+      }
+      
+      if (!insertNPC.role) {
+        throw new ValidationError('NPC role is required');
+      }
+
+      const id = randomUUID();
+      const npc: ScenarioNPC = { 
+        ...insertNPC, 
+        id,
+        scenarioId: insertNPC.scenarioId ?? null,
+        description: insertNPC.description ?? null,
+        location: insertNPC.location ?? null,
+        faction: insertNPC.faction ?? null,
+        importance: insertNPC.importance ?? 'minor',
+        status: insertNPC.status ?? 'alive',
+        createdAt: new Date()
+      };
+      
+      this.scenarioNPCs.set(id, npc);
+      console.log(`[MemStorage] Created NPC: ${npc.name} (${npc.role}, ${id})`);
+      return npc;
+    } catch (error) {
+      console.error('[MemStorage] Error creating NPC:', error);
+      throw error;
+    }
+  }
+
+  async updateScenarioNPC(id: string, updates: Partial<ScenarioNPC>): Promise<ScenarioNPC> {
+    try {
+      this.validateId(id, 'updateScenarioNPC');
+      
+      const existingNPC = this.scenarioNPCs.get(id);
+      if (!existingNPC) {
+        throw new NotFoundError('NPC', id);
+      }
+
+      const updatedNPC: ScenarioNPC = { 
+        ...existingNPC, 
+        ...updates,
+        id: existingNPC.id // Prevent ID changes
+      };
+      
+      this.scenarioNPCs.set(id, updatedNPC);
+      console.log(`[MemStorage] Updated NPC: ${updatedNPC.name} (${id})`);
+      return updatedNPC;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating NPC '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deleteScenarioNPC(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deleteScenarioNPC');
+      
+      const npc = this.scenarioNPCs.get(id);
+      if (!npc) {
+        throw new NotFoundError('NPC', id);
+      }
+
+      this.scenarioNPCs.delete(id);
+      console.log(`[MemStorage] Deleted NPC: ${npc.name} (${id})`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting NPC '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async suppressScenarioNPC(id: string): Promise<ScenarioNPC> {
+    return this.updateScenarioNPC(id, { status: 'suppressed' });
+  }
+
+  async restoreScenarioNPC(id: string): Promise<ScenarioNPC> {
+    return this.updateScenarioNPC(id, { status: 'alive' });
+  }
+
+  /**
+   * SCENARIO QUEST METHODS
+   */
+
+  async getScenarioQuests(scenarioId: string): Promise<ScenarioQuest[]> {
+    try {
+      this.validateId(scenarioId, 'getScenarioQuests');
+      
+      const quests = Array.from(this.scenarioQuests.values()).filter(
+        quest => quest.scenarioId === scenarioId
+      );
+      
+      console.log(`[MemStorage] Found ${quests.length} quests for scenario ${scenarioId}`);
+      return quests.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting quests for scenario '${scenarioId}':`, error);
+      throw error;
+    }
+  }
+
+  async getScenarioQuest(id: string): Promise<ScenarioQuest | undefined> {
+    try {
+      this.validateId(id, 'getScenarioQuest');
+      return this.scenarioQuests.get(id);
+    } catch (error) {
+      console.error(`[MemStorage] Error getting quest '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async createScenarioQuest(insertQuest: InsertScenarioQuest): Promise<ScenarioQuest> {
+    try {
+      if (!insertQuest.title || insertQuest.title.trim() === '') {
+        throw new ValidationError('Quest title is required');
+      }
+
+      const id = randomUUID();
+      const quest: ScenarioQuest = { 
+        ...insertQuest, 
+        id,
+        scenarioId: insertQuest.scenarioId ?? null,
+        description: insertQuest.description,
+        status: insertQuest.status ?? 'not_started',
+        priority: insertQuest.priority ?? 'medium',
+        rewards: insertQuest.rewards ?? null,
+        requirements: insertQuest.requirements ?? null,
+        createdAt: new Date()
+      };
+      
+      this.scenarioQuests.set(id, quest);
+      console.log(`[MemStorage] Created quest: ${quest.title} (${id})`);
+      return quest;
+    } catch (error) {
+      console.error('[MemStorage] Error creating quest:', error);
+      throw error;
+    }
+  }
+
+  async updateScenarioQuest(id: string, updates: Partial<ScenarioQuest>): Promise<ScenarioQuest> {
+    try {
+      this.validateId(id, 'updateScenarioQuest');
+      
+      const existingQuest = this.scenarioQuests.get(id);
+      if (!existingQuest) {
+        throw new NotFoundError('Quest', id);
+      }
+
+      const updatedQuest: ScenarioQuest = { 
+        ...existingQuest, 
+        ...updates,
+        id: existingQuest.id
+      };
+      
+      this.scenarioQuests.set(id, updatedQuest);
+      console.log(`[MemStorage] Updated quest: ${updatedQuest.title} (${id})`);
+      return updatedQuest;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating quest '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deleteScenarioQuest(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deleteScenarioQuest');
+      
+      const quest = this.scenarioQuests.get(id);
+      if (!quest) {
+        throw new NotFoundError('Quest', id);
+      }
+
+      this.scenarioQuests.delete(id);
+      console.log(`[MemStorage] Deleted quest: ${quest.title} (${id})`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting quest '${id}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * ENVIRONMENTAL CONDITION METHODS
+   */
+
+  async getScenarioConditions(scenarioId: string): Promise<EnvironmentalCondition[]> {
+    try {
+      this.validateId(scenarioId, 'getScenarioConditions');
+      
+      const conditions = Array.from(this.environmentalConditions.values()).filter(
+        condition => condition.scenarioId === scenarioId
+      );
+      
+      console.log(`[MemStorage] Found ${conditions.length} conditions for scenario ${scenarioId}`);
+      return conditions.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting conditions for scenario '${scenarioId}':`, error);
+      throw error;
+    }
+  }
+
+  async getEnvironmentalCondition(id: string): Promise<EnvironmentalCondition | undefined> {
+    try {
+      this.validateId(id, 'getEnvironmentalCondition');
+      return this.environmentalConditions.get(id);
+    } catch (error) {
+      console.error(`[MemStorage] Error getting condition '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async createEnvironmentalCondition(insertCondition: InsertEnvironmentalCondition): Promise<EnvironmentalCondition> {
+    try {
+      if (!insertCondition.name || insertCondition.name.trim() === '') {
+        throw new ValidationError('Condition name is required');
+      }
+
+      const id = randomUUID();
+      const condition: EnvironmentalCondition = { 
+        ...insertCondition, 
+        id,
+        scenarioId: insertCondition.scenarioId ?? null,
+        description: insertCondition.description,
+        severity: insertCondition.severity ?? 'moderate',
+        affectedRegions: insertCondition.affectedRegions ?? null,
+        duration: insertCondition.duration ?? null,
+        createdAt: new Date()
+      };
+      
+      this.environmentalConditions.set(id, condition);
+      console.log(`[MemStorage] Created condition: ${condition.name} (${id})`);
+      return condition;
+    } catch (error) {
+      console.error('[MemStorage] Error creating condition:', error);
+      throw error;
+    }
+  }
+
+  async updateEnvironmentalCondition(id: string, updates: Partial<EnvironmentalCondition>): Promise<EnvironmentalCondition> {
+    try {
+      this.validateId(id, 'updateEnvironmentalCondition');
+      
+      const existingCondition = this.environmentalConditions.get(id);
+      if (!existingCondition) {
+        throw new NotFoundError('Condition', id);
+      }
+
+      const updatedCondition: EnvironmentalCondition = { 
+        ...existingCondition, 
+        ...updates,
+        id: existingCondition.id
+      };
+      
+      this.environmentalConditions.set(id, updatedCondition);
+      console.log(`[MemStorage] Updated condition: ${updatedCondition.name} (${id})`);
+      return updatedCondition;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating condition '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deleteEnvironmentalCondition(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deleteEnvironmentalCondition');
+      
+      const condition = this.environmentalConditions.get(id);
+      if (!condition) {
+        throw new NotFoundError('Condition', id);
+      }
+
+      this.environmentalConditions.delete(id);
+      console.log(`[MemStorage] Deleted condition: ${condition.name} (${id})`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting condition '${id}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * PLAYER CHARACTER METHODS
+   */
+
+  async getUserCharacters(userId: string): Promise<PlayerCharacter[]> {
+    try {
+      this.validateId(userId, 'getUserCharacters');
+      
+      const characters = Array.from(this.playerCharacters.values()).filter(
+        character => character.userId === userId
+      );
+      
+      console.log(`[MemStorage] Found ${characters.length} characters for user ${userId}`);
+      return characters.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting characters for user '${userId}':`, error);
+      throw error;
+    }
+  }
+
+  async getSessionCharacters(sessionId: string): Promise<PlayerCharacter[]> {
+    try {
+      this.validateId(sessionId, 'getSessionCharacters');
+      
+      const characters = Array.from(this.playerCharacters.values()).filter(
+        character => character.sessionId === sessionId
+      );
+      
+      console.log(`[MemStorage] Found ${characters.length} characters for session ${sessionId}`);
+      return characters.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting characters for session '${sessionId}':`, error);
+      throw error;
+    }
+  }
+
+  async getPlayerCharacter(id: string): Promise<PlayerCharacter | undefined> {
+    try {
+      this.validateId(id, 'getPlayerCharacter');
+      return this.playerCharacters.get(id);
+    } catch (error) {
+      console.error(`[MemStorage] Error getting character '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async createPlayerCharacter(insertCharacter: InsertPlayerCharacter): Promise<PlayerCharacter> {
+    try {
+      if (!insertCharacter.name || insertCharacter.name.trim() === '') {
+        throw new ValidationError('Character name is required');
+      }
+
+      const id = randomUUID();
+      const character: PlayerCharacter = { 
+        ...insertCharacter, 
+        id,
+        sessionId: insertCharacter.sessionId ?? null,
+        userId: insertCharacter.userId ?? null,
+        level: insertCharacter.level ?? 1,
+        background: insertCharacter.background ?? null,
+        stats: insertCharacter.stats ?? null,
+        skills: insertCharacter.skills ?? null,
+        equipment: insertCharacter.equipment ?? null,
+        notes: insertCharacter.notes ?? null,
+        isActive: insertCharacter.isActive ?? 'true',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.playerCharacters.set(id, character);
+      console.log(`[MemStorage] Created character: ${character.name} (${character.characterClass}, ${id})`);
+      return character;
+    } catch (error) {
+      console.error('[MemStorage] Error creating character:', error);
+      throw error;
+    }
+  }
+
+  async updatePlayerCharacter(id: string, updates: Partial<PlayerCharacter>): Promise<PlayerCharacter> {
+    try {
+      this.validateId(id, 'updatePlayerCharacter');
+      
+      const existingCharacter = this.playerCharacters.get(id);
+      if (!existingCharacter) {
+        throw new NotFoundError('Character', id);
+      }
+
+      const updatedCharacter: PlayerCharacter = { 
+        ...existingCharacter, 
+        ...updates,
+        id: existingCharacter.id,
+        updatedAt: new Date()
+      };
+      
+      this.playerCharacters.set(id, updatedCharacter);
+      console.log(`[MemStorage] Updated character: ${updatedCharacter.name} (${id})`);
+      return updatedCharacter;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating character '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async deletePlayerCharacter(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'deletePlayerCharacter');
+      
+      const character = this.playerCharacters.get(id);
+      if (!character) {
+        throw new NotFoundError('Character', id);
+      }
+
+      // Remove from session players first
+      Array.from(this.sessionPlayers.entries()).forEach(([sessionPlayerId, sessionPlayer]) => {
+        if (sessionPlayer.characterId === id) {
+          this.sessionPlayers.delete(sessionPlayerId);
+        }
+      });
+
+      this.playerCharacters.delete(id);
+      console.log(`[MemStorage] Deleted character: ${character.name} (${id})`);
+    } catch (error) {
+      console.error(`[MemStorage] Error deleting character '${id}':`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * SESSION PLAYER METHODS
+   */
+
+  async getSessionPlayers(sessionId: string): Promise<SessionPlayer[]> {
+    try {
+      this.validateId(sessionId, 'getSessionPlayers');
+      
+      const players = Array.from(this.sessionPlayers.values()).filter(
+        player => player.sessionId === sessionId
+      );
+      
+      console.log(`[MemStorage] Found ${players.length} players for session ${sessionId}`);
+      return players.sort((a, b) => (a.joinedAt?.getTime() || 0) - (b.joinedAt?.getTime() || 0));
+    } catch (error) {
+      console.error(`[MemStorage] Error getting players for session '${sessionId}':`, error);
+      throw error;
+    }
+  }
+
+  async getSessionPlayer(id: string): Promise<SessionPlayer | undefined> {
+    try {
+      this.validateId(id, 'getSessionPlayer');
+      return this.sessionPlayers.get(id);
+    } catch (error) {
+      console.error(`[MemStorage] Error getting session player '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async addPlayerToSession(insertPlayer: InsertSessionPlayer): Promise<SessionPlayer> {
+    try {
+      if (!insertPlayer.sessionId || !insertPlayer.userId) {
+        throw new ValidationError('Session ID and User ID are required');
+      }
+
+      const id = randomUUID();
+      const player: SessionPlayer = { 
+        ...insertPlayer, 
+        id,
+        sessionId: insertPlayer.sessionId ?? null,
+        userId: insertPlayer.userId ?? null,
+        characterId: insertPlayer.characterId ?? null,
+        role: insertPlayer.role ?? 'player',
+        permissions: insertPlayer.permissions ?? null,
+        isOnline: insertPlayer.isOnline ?? 'false',
+        joinedAt: new Date(),
+        lastActive: new Date()
+      };
+      
+      this.sessionPlayers.set(id, player);
+      console.log(`[MemStorage] Added player to session: ${insertPlayer.userId} (${id})`);
+      return player;
+    } catch (error) {
+      console.error('[MemStorage] Error adding player to session:', error);
+      throw error;
+    }
+  }
+
+  async updateSessionPlayer(id: string, updates: Partial<SessionPlayer>): Promise<SessionPlayer> {
+    try {
+      this.validateId(id, 'updateSessionPlayer');
+      
+      const existingPlayer = this.sessionPlayers.get(id);
+      if (!existingPlayer) {
+        throw new NotFoundError('Session Player', id);
+      }
+
+      const updatedPlayer: SessionPlayer = { 
+        ...existingPlayer, 
+        ...updates,
+        id: existingPlayer.id,
+        lastActive: new Date()
+      };
+      
+      this.sessionPlayers.set(id, updatedPlayer);
+      console.log(`[MemStorage] Updated session player: ${existingPlayer.userId} (${id})`);
+      return updatedPlayer;
+    } catch (error) {
+      console.error(`[MemStorage] Error updating session player '${id}':`, error);
+      throw error;
+    }
+  }
+
+  async removePlayerFromSession(id: string): Promise<void> {
+    try {
+      this.validateId(id, 'removePlayerFromSession');
+      
+      const player = this.sessionPlayers.get(id);
+      if (!player) {
+        throw new NotFoundError('Session Player', id);
+      }
+
+      this.sessionPlayers.delete(id);
+      console.log(`[MemStorage] Removed player from session: ${player.userId} (${id})`);
+    } catch (error) {
+      console.error(`[MemStorage] Error removing player from session '${id}':`, error);
+      throw error;
+    }
+  }
+
   async getStorageStats(): Promise<{
     users: number;
     sessions: number;
@@ -1476,6 +2081,11 @@ export class MemStorage implements IStorage {
     timelineEvents: number;
     scenarios: number;
     regions: number;
+    scenarioNPCs: number;
+    scenarioQuests: number;
+    environmentalConditions: number;
+    playerCharacters: number;
+    sessionPlayers: number;
   }> {
     return {
       users: this.users.size,
@@ -1485,6 +2095,11 @@ export class MemStorage implements IStorage {
       timelineEvents: this.timelineEvents.size,
       scenarios: this.scenarios.size,
       regions: this.regions.size,
+      scenarioNPCs: this.scenarioNPCs.size,
+      scenarioQuests: this.scenarioQuests.size,
+      environmentalConditions: this.environmentalConditions.size,
+      playerCharacters: this.playerCharacters.size,
+      sessionPlayers: this.sessionPlayers.size,
     };
   }
 }

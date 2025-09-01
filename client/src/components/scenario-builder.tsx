@@ -67,6 +67,8 @@ interface EnvironmentalCondition {
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
+import { CharacterManager } from './character-manager';
+import { PlayerManager } from './player-manager';
 
 // Types for scenario management
 interface Scenario {
@@ -235,6 +237,7 @@ export function ScenarioBuilder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   
   // Form state
   const [scenarioForm, setScenarioForm] = useState<CreateScenarioData>({
@@ -940,13 +943,15 @@ export function ScenarioBuilder() {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-6 bg-slate-700">
-                      <TabsTrigger value="overview" className="text-white">Overview</TabsTrigger>
-                      <TabsTrigger value="regions" className="text-white">Regions ({regions.length})</TabsTrigger>
-                      <TabsTrigger value="npcs" className="text-white">NPCs ({npcs.length})</TabsTrigger>
-                      <TabsTrigger value="quests" className="text-white">Quests ({quests.length})</TabsTrigger>
-                      <TabsTrigger value="environment" className="text-white">Environment ({environmentalConditions.length})</TabsTrigger>
-                      <TabsTrigger value="library" className="text-white">Library</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-8 bg-slate-700">
+                      <TabsTrigger value="overview" className="text-white">{t('tabs.overview')}</TabsTrigger>
+                      <TabsTrigger value="regions" className="text-white">{t('tabs.regions')} ({regions.length})</TabsTrigger>
+                      <TabsTrigger value="npcs" className="text-white">{t('tabs.npcs')} ({npcs.length})</TabsTrigger>
+                      <TabsTrigger value="quests" className="text-white">{t('tabs.quests')} ({quests.length})</TabsTrigger>
+                      <TabsTrigger value="environment" className="text-white">{t('tabs.environment')} ({environmentalConditions.length})</TabsTrigger>
+                      <TabsTrigger value="characters" className="text-white">{t('tabs.characters')}</TabsTrigger>
+                      <TabsTrigger value="players" className="text-white">{t('tabs.players')}</TabsTrigger>
+                      <TabsTrigger value="library" className="text-white">{t('tabs.library')}</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="overview" className="mt-6">
@@ -1284,6 +1289,14 @@ export function ScenarioBuilder() {
                       </div>
                     </TabsContent>
 
+                    <TabsContent value="characters" className="mt-6">
+                      <CharacterManager userId="demo-user" />
+                    </TabsContent>
+                    
+                    <TabsContent value="players" className="mt-6">
+                      <PlayerManager sessionId={currentSessionId} userId="demo-user" />
+                    </TabsContent>
+                    
                     <TabsContent value="library" className="mt-6">
                       <InteractiveLibrary showTitle={false} />
                     </TabsContent>
