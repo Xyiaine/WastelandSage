@@ -130,7 +130,8 @@ const REGION_TYPES = [
   { value: 'settlement', label: 'Settlement', icon: '🏘️' },
   { value: 'wasteland', label: 'Wasteland', icon: '🏜️' },
   { value: 'fortress', label: 'Fortress', icon: '🏰' },
-  { value: 'trade_hub', label: 'Trade Hub', icon: '🏪' }
+  { value: 'trade_hub', label: 'Trade Hub', icon: '🏪' },
+  { value: 'industrial', label: 'Industrial', icon: '🏭' }
 ];
 
 const POLITICAL_STANCES = [
@@ -147,7 +148,7 @@ const COMMON_THEMES = [
 
 const COMMON_RESOURCES = [
   'water', 'fuel', 'weapons', 'medicine', 'food', 'technology', 
-  'materials', 'information', 'labor', 'transportation'
+  'materials', 'information', 'labor', 'transportation', 'metal', 'energy'
 ];
 
 const NPC_ROLES = [
@@ -230,19 +231,22 @@ const SCENARIO_TEMPLATES = [
 
 export function ScenarioBuilder() {
   const { t } = useTranslation();
-  
+
   // State management
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
-  const [npcs, setNpcs] = useState<ScenarioNPC[]>([]);
+  const [npcs, setNpcs] = useState<ScenarioNPC[]>([]); // Keep this for potential future use or API consistency
+  const [regionNpcs, setRegionNpcs] = useState<{ [regionId: string]: ScenarioNPC[] }>({}); // Store NPCs per region
   const [quests, setQuests] = useState<ScenarioQuest[]>([]);
   const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalCondition[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  
+  const [expandedRegions, setExpandedRegions] = useState<{ [regionId: string]: boolean }>({});
+  const [activeRegionTab, setActiveRegionTab] = useState<{ [regionId: string]: string }>({});
+
   // Form state
   const [scenarioForm, setScenarioForm] = useState<CreateScenarioData>({
     title: '',
@@ -252,7 +256,7 @@ export function ScenarioBuilder() {
     keyThemes: [],
     status: 'draft'
   });
-  
+
   const [regionForm, setRegionForm] = useState<CreateRegionData>({
     name: '',
     type: 'city',
@@ -263,7 +267,7 @@ export function ScenarioBuilder() {
     threatLevel: 1,
     politicalStance: 'neutral'
   });
-  
+
   const [npcForm, setNpcForm] = useState({
     name: '',
     role: 'survivor',
@@ -273,7 +277,7 @@ export function ScenarioBuilder() {
     importance: 'minor',
     status: 'alive'
   });
-  
+
   const [questForm, setQuestForm] = useState({
     title: '',
     description: '',
@@ -282,7 +286,7 @@ export function ScenarioBuilder() {
     rewards: '',
     requirements: ''
   });
-  
+
   const [conditionForm, setConditionForm] = useState({
     name: '',
     description: '',
@@ -290,7 +294,7 @@ export function ScenarioBuilder() {
     affectedRegions: [] as string[],
     duration: ''
   });
-  
+
   const [showCreateScenario, setShowCreateScenario] = useState(false);
   const [showEditScenario, setShowEditScenario] = useState(false);
   const [showCreateRegion, setShowCreateRegion] = useState(false);
@@ -307,11 +311,43 @@ export function ScenarioBuilder() {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
-  
+  const [generatingNpcsForRegion, setGeneratingNpcsForRegion] = useState<string | null>(null);
+
+  // NPC role templates for different region types
+  const getRegionNPCRoles = (regionType: string): string[] => {
+    const baseRoles = ['leader', 'guard', 'merchant', 'survivor'];
+    const rolesByType: {[key: string]: string[]} = {
+      'city': ['leader', 'trader', 'guard', 'scientist', 'merchant', 'engineer', 'medic', 'informant', 'warrior', 'guide'],
+      'settlement': ['leader', 'survivor', 'guard', 'trader', 'medic', 'merchant', 'warrior', 'engineer', 'guide', 'scientist'],
+      'fortress': ['leader', 'warrior', 'guard', 'engineer', 'medic', 'trader', 'informant', 'scientist', 'survivor', 'guide'],
+      'trade_hub': ['trader', 'merchant', 'leader', 'guard', 'informant', 'guide', 'survivor', 'engineer', 'medic', 'scientist'],
+      'wasteland': ['survivor', 'guide', 'warrior', 'medic', 'trader', 'leader', 'guard', 'merchant', 'engineer', 'informant'],
+      'industrial': ['engineer', 'leader', 'trader', 'scientist', 'warrior', 'guard', 'medic', 'survivor', 'informant', 'merchant']
+    };
+    return rolesByType[regionType] || baseRoles;
+  };
+
+  // Generate NPC names based on Mediterranean theme
+  const generateNPCName = (): string => {
+    const firstNames = [
+      'Alessandro', 'Bianca', 'Carlos', 'Diana', 'Elena', 'Franco', 'Giulia', 'Hassan',
+      'Isabella', 'Jacques', 'Kamila', 'Lorenzo', 'Maria', 'Nicolas', 'Olivia', 'Paolo',
+      'Qadira', 'Roberto', 'Sofia', 'Tariq', 'Ursula', 'Vincent', 'Yasmin', 'Zara'
+    ];
+    const lastNames = [
+      'Rossi', 'Martinez', 'Dubois', 'Schmidt', 'Petrov', 'Hassan', 'Al-Rashid', 'Dimitriou',
+      'Fernandez', 'Costa', 'Romano', 'Silva', 'Moreau', 'Weber', 'Novak', 'Popov'
+    ];
+
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    return `${firstName} ${lastName}`;
+  };
+
   // Filter content based on search query and filter type
   const filteredContent = React.useMemo(() => {
     let content: any[] = [];
-    
+
     if (filterType === 'all' || filterType === 'regions') {
       content = [...content, ...regions.map(r => ({ ...r, type: 'region' }))];
     }
@@ -321,7 +357,7 @@ export function ScenarioBuilder() {
     if (filterType === 'all' || filterType === 'conditions') {
       content = [...content, ...environmentalConditions.map(c => ({ ...c, type: 'condition' }))];
     }
-    
+
     if (searchQuery) {
       return content.filter(item => 
         item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -329,20 +365,28 @@ export function ScenarioBuilder() {
         item.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     return content;
   }, [regions, quests, environmentalConditions, searchQuery, filterType]);
 
   // API Functions
   const fetchScenarios = async () => {
+    if (loading) return;
+
     try {
       setLoading(true);
-      // For demo purposes, using a static user ID - in production this would come from auth
+      setError(null);
+
       const response = await fetch('/api/scenarios?userId=demo-user');
-      if (!response.ok) throw new Error('Failed to fetch scenarios');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch scenarios: ${response.status}`);
+      }
+
       const data = await response.json();
-      setScenarios(data);
+      setScenarios(Array.isArray(data) ? data : []);
+
     } catch (err) {
+      console.error('Error fetching scenarios:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch scenarios');
     } finally {
       setLoading(false);
@@ -355,7 +399,7 @@ export function ScenarioBuilder() {
       if (!response.ok) throw new Error('Failed to fetch regions');
       const data = await response.json();
       setRegions(data);
-      
+
       // Auto-generate regions if none exist
       if (data.length === 0) {
         console.log('No regions found, generating default regions based on lore...');
@@ -372,6 +416,117 @@ export function ScenarioBuilder() {
     }
   };
 
+  // Fetch NPCs for a specific region
+  const fetchRegionNPCs = async (regionId: string, regionName: string) => {
+    try {
+      if (!currentScenario) return;
+
+      const response = await fetch(`/api/scenarios/${currentScenario.id}/npcs`);
+      if (!response.ok) {
+        // Don't throw an error here if it's a 404 or similar, just log and return empty
+        if (response.status === 404) {
+            console.warn(`NPCs not found for scenario ${currentScenario.id}`);
+            setRegionNpcs(prev => ({ ...prev, [regionId]: [] }));
+            return [];
+        }
+        throw new Error(`Failed to fetch NPCs: ${response.status}`);
+      }
+
+      const allNpcs = await response.json();
+      const regionSpecificNpcs = allNpcs.filter((npc: ScenarioNPC) => 
+        npc.location === regionName || npc.location === regionId // Allow matching by name or ID if applicable
+      );
+
+      setRegionNpcs(prev => ({
+        ...prev,
+        [regionId]: regionSpecificNpcs
+      }));
+
+      return regionSpecificNpcs;
+    } catch (err) {
+      console.error('Error fetching region NPCs:', err);
+      // Ensure that even if fetching fails, we have an entry for the region
+      setRegionNpcs(prev => ({ ...prev, [regionId]: [] }));
+      return [];
+    }
+  };
+
+  // Auto-generate 10 NPCs for a region
+  const generateRegionNPCs = async (region: Region) => {
+    if (!currentScenario) return;
+
+    try {
+      setGeneratingNpcsForRegion(region.id);
+      const roles = getRegionNPCRoles(region.type);
+      const newNpcs: ScenarioNPC[] = [];
+
+      for (let i = 0; i < 10; i++) {
+        const role = roles[i % roles.length];
+        const name = generateNPCName();
+        // Assign importance: first 3 are major, next 3 are minor, rest are minor
+        const importance = i < 3 ? 'major' : i < 6 ? 'minor' : 'minor';
+
+        const npcData = {
+          scenarioId: currentScenario.id,
+          name,
+          role,
+          description: `A ${role} operating in ${region.name}. ${getDescriptionByRole(role, region)}`,
+          location: region.name,
+          faction: region.controllingFaction || 'Independent',
+          importance,
+          status: 'alive' as const
+        };
+
+        // Use a more robust API call for creating NPCs
+        const response = await fetch('/api/scenario-npcs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(npcData)
+        });
+
+        if (response.ok) {
+          const npc = await response.json();
+          newNpcs.push(npc);
+        } else {
+          console.error(`Failed to create NPC: ${npcData.name}`, await response.json());
+        }
+      }
+
+      // Update region NPCs state
+      setRegionNpcs(prev => ({
+        ...prev,
+        [region.id]: newNpcs
+      }));
+
+      setError(null); // Clear any previous errors
+      console.log(`Generated ${newNpcs.length} NPCs for ${region.name}`);
+
+    } catch (err) {
+      console.error('Error generating NPCs:', err);
+      setError(`Failed to generate NPCs for ${region.name}`);
+    } finally {
+      setGeneratingNpcsForRegion(null);
+    }
+  };
+
+  // Get description based on role and region
+  const getDescriptionByRole = (role: string, region: Region): string => {
+    const descriptions: {[key: string]: string} = {
+      'leader': `Commands respect and makes crucial decisions affecting ${region.name}'s future.`,
+      'trader': `Manages commerce and trade relationships with other settlements.`,
+      'guard': `Protects the settlement from threats and maintains order.`,
+      'scientist': `Works with technology and research to improve life in the wasteland.`,
+      'merchant': `Deals in goods and services essential for survival.`,
+      'engineer': `Maintains and repairs the vital machinery keeping the settlement running.`,
+      'medic': `Provides medical care and treatments in this harsh environment.`,
+      'informant': `Gathers and trades information from across the wasteland.`,
+      'warrior': `A skilled fighter who defends against raiders and hostile forces.`,
+      'guide': `Knows the dangerous paths through the wasteland between settlements.`,
+      'survivor': `Has endured the harsh realities of post-apocalyptic life.`
+    };
+    return descriptions[role] || 'A resident of this settlement trying to survive.';
+  };
+
   const createScenario = async (data: CreateScenarioData) => {
     try {
       setLoading(true);
@@ -380,7 +535,7 @@ export function ScenarioBuilder() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, userId: 'demo-user' })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         if (errorData.details && Array.isArray(errorData.details)) {
@@ -392,7 +547,7 @@ export function ScenarioBuilder() {
         }
         throw new Error(errorData.error || 'Failed to create scenario');
       }
-      
+
       const scenario = await response.json();
       setScenarios(prev => [scenario, ...prev]);
       setCurrentScenario(scenario);
@@ -413,7 +568,7 @@ export function ScenarioBuilder() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         if (errorData.details && Array.isArray(errorData.details)) {
@@ -425,7 +580,7 @@ export function ScenarioBuilder() {
         }
         throw new Error(errorData.error || 'Failed to update scenario');
       }
-      
+
       const updatedScenario = await response.json();
       setScenarios(prev => prev.map(s => s.id === scenarioId ? updatedScenario : s));
       setCurrentScenario(updatedScenario);
@@ -449,12 +604,12 @@ export function ScenarioBuilder() {
       if (!response.ok) throw new Error('Failed to create region');
       const region = await response.json();
       setRegions(prev => [...prev, region]);
-      
+
       // Auto-generate 10 important NPCs for the new region
       if (region.name && region.type && region.controllingFaction) {
-        await generateRegionNPCs(region.name, region.type, region.controllingFaction);
+        await generateRegionNPCs(region);
       }
-      
+
       setShowCreateRegion(false);
       resetRegionForm();
     } catch (err) {
@@ -476,6 +631,10 @@ export function ScenarioBuilder() {
       const updatedRegion = await response.json();
       setRegions(prev => prev.map(r => r.id === regionId ? updatedRegion : r));
       setEditingRegion(null);
+      // If the region name or type changed, we might need to re-fetch NPCs for this region
+      if (data.name || data.type || data.controllingFaction) {
+        await fetchRegionNPCs(updatedRegion.id, updatedRegion.name);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update region');
     } finally {
@@ -491,8 +650,67 @@ export function ScenarioBuilder() {
       });
       if (!response.ok) throw new Error('Failed to delete region');
       setRegions(prev => prev.filter(r => r.id !== regionId));
+      // Optionally clear NPCs related to this region from state
+      setRegionNpcs(prev => {
+        const newState = { ...prev };
+        delete newState[regionId];
+        return newState;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete region');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch all necessary data for the current scenario
+  const fetchScenarioData = async (scenarioId: string) => {
+    if (!scenarioId) return;
+    try {
+      setLoading(true);
+      setError(null);
+      // Fetching all data in parallel
+      const [
+        regionsResponse,
+        npcsResponse, // Fetch all NPCs from a central API endpoint
+        questsResponse,
+        conditionsResponse
+      ] = await Promise.all([
+        fetch(`/api/scenarios/${scenarioId}/regions`),
+        fetch(`/api/scenarios/${scenarioId}/npcs`), // Assuming a central endpoint for all NPCs
+        fetch(`/api/scenarios/${scenarioId}/quests`),
+        fetch(`/api/scenarios/${scenarioId}/environmental-conditions`)
+      ]);
+
+      const dataPromises = [
+        regionsResponse.ok ? regionsResponse.json() : Promise.reject(new Error('Failed to fetch regions')),
+        npcsResponse.ok ? npcsResponse.json() : Promise.reject(new Error('Failed to fetch NPCs')),
+        questsResponse.ok ? questsResponse.json() : Promise.reject(new Error('Failed to fetch quests')),
+        conditionsResponse.ok ? conditionsResponse.json() : Promise.reject(new Error('Failed to fetch conditions'))
+      ];
+
+      const [fetchedRegions, fetchedNpcs, fetchedQuests, fetchedConditions] = await Promise.all(dataPromises);
+
+      setRegions(fetchedRegions);
+      setNpcs(fetchedNpcs); // Set the global NPCs state
+      setQuests(fetchedQuests);
+      setEnvironmentalConditions(fetchedConditions);
+
+      // Process NPCs to populate regionNpcs state
+      const regionNpcsMap: { [regionId: string]: ScenarioNPC[] } = {};
+      fetchedRegions.forEach((region: Region) => {
+        regionNpcsMap[region.id] = fetchedNpcs.filter((npc: ScenarioNPC) => npc.location === region.name || npc.location === region.id);
+      });
+      setRegionNpcs(regionNpcsMap);
+
+    } catch (err) {
+      console.error('Error fetching scenario data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load scenario data');
+      setRegions([]);
+      setNpcs([]);
+      setQuests([]);
+      setEnvironmentalConditions([]);
+      setRegionNpcs({});
     } finally {
       setLoading(false);
     }
@@ -513,13 +731,13 @@ export function ScenarioBuilder() {
   // Validation helpers
   const validateScenarioForm = () => {
     const errors: string[] = [];
-    
+
     if (!scenarioForm.title.trim()) {
       errors.push('Title is required');
     } else if (scenarioForm.title.length > 200) {
       errors.push('Title must be under 200 characters');
     }
-    
+
     if (!scenarioForm.mainIdea.trim()) {
       errors.push('Main idea is required');
     } else if (scenarioForm.mainIdea.length < 10) {
@@ -527,15 +745,15 @@ export function ScenarioBuilder() {
     } else if (scenarioForm.mainIdea.length > 10000) {
       errors.push('Main idea must be under 10000 characters');
     }
-    
+
     if (scenarioForm.worldContext && scenarioForm.worldContext.length > 10000) {
       errors.push('World context must be under 10000 characters');
     }
-    
+
     if (scenarioForm.politicalSituation && scenarioForm.politicalSituation.length > 10000) {
       errors.push('Political situation must be under 10000 characters');
     }
-    
+
     return errors;
   };
 
@@ -553,223 +771,6 @@ export function ScenarioBuilder() {
       keyThemes: scenario.keyThemes || [],
       status: scenario.status
     });
-  };
-
-  // Generate important NPCs for a region
-  const generateRegionNPCs = async (regionName: string, regionType: string, controllingFaction: string) => {
-    const npcTemplates = {
-      city: [
-        { role: 'leader', importance: 'critical', title: 'Mayor' },
-        { role: 'merchant', importance: 'major', title: 'Trade Master' },
-        { role: 'scientist', importance: 'major', title: 'Chief Researcher' },
-        { role: 'guard', importance: 'major', title: 'Security Chief' },
-        { role: 'informant', importance: 'major', title: 'Information Broker' },
-        { role: 'medic', importance: 'major', title: 'Head Physician' },
-        { role: 'engineer', importance: 'minor', title: 'Lead Engineer' },
-        { role: 'survivor', importance: 'minor', title: 'Veteran Survivor' },
-        { role: 'trader', importance: 'minor', title: 'Market Vendor' },
-        { role: 'warrior', importance: 'minor', title: 'Elite Guard' }
-      ],
-      industrial: [
-        { role: 'leader', importance: 'critical', title: 'Factory Foreman' },
-        { role: 'engineer', importance: 'major', title: 'Chief Engineer' },
-        { role: 'trader', importance: 'major', title: 'Supply Coordinator' },
-        { role: 'warrior', importance: 'major', title: 'Industrial Guard' },
-        { role: 'scientist', importance: 'major', title: 'Production Specialist' },
-        { role: 'medic', importance: 'major', title: 'Safety Officer' },
-        { role: 'survivor', importance: 'minor', title: 'Worker Representative' },
-        { role: 'informant', importance: 'minor', title: 'Union Organizer' },
-        { role: 'merchant', importance: 'minor', title: 'Parts Dealer' },
-        { role: 'guide', importance: 'minor', title: 'Transport Coordinator' }
-      ],
-      fortress: [
-        { role: 'leader', importance: 'critical', title: 'Commander' },
-        { role: 'warrior', importance: 'major', title: 'Lieutenant' },
-        { role: 'warrior', importance: 'major', title: 'Sergeant' },
-        { role: 'medic', importance: 'major', title: 'Combat Medic' },
-        { role: 'engineer', importance: 'major', title: 'Fortification Expert' },
-        { role: 'informant', importance: 'major', title: 'Intelligence Officer' },
-        { role: 'guard', importance: 'minor', title: 'Gate Keeper' },
-        { role: 'survivor', importance: 'minor', title: 'Veteran Soldier' },
-        { role: 'trader', importance: 'minor', title: 'Quartermaster' },
-        { role: 'scientist', importance: 'minor', title: 'Weapons Specialist' }
-      ],
-      trade_hub: [
-        { role: 'leader', importance: 'critical', title: 'Trade Master' },
-        { role: 'merchant', importance: 'major', title: 'Guild Leader' },
-        { role: 'trader', importance: 'major', title: 'Caravan Master' },
-        { role: 'informant', importance: 'major', title: 'Market Intelligence' },
-        { role: 'guard', importance: 'major', title: 'Market Security' },
-        { role: 'guide', importance: 'major', title: 'Route Expert' },
-        { role: 'survivor', importance: 'minor', title: 'Experienced Trader' },
-        { role: 'medic', importance: 'minor', title: 'Traveling Healer' },
-        { role: 'engineer', importance: 'minor', title: 'Vehicle Mechanic' },
-        { role: 'scientist', importance: 'minor', title: 'Quality Inspector' }
-      ],
-      settlement: [
-        { role: 'leader', importance: 'critical', title: 'Elder' },
-        { role: 'medic', importance: 'major', title: 'Village Healer' },
-        { role: 'guard', importance: 'major', title: 'Settlement Protector' },
-        { role: 'survivor', importance: 'major', title: 'Senior Resident' },
-        { role: 'trader', importance: 'major', title: 'Supply Coordinator' },
-        { role: 'guide', importance: 'major', title: 'Scout' },
-        { role: 'engineer', importance: 'minor', title: 'Maintenance Worker' },
-        { role: 'merchant', importance: 'minor', title: 'Local Vendor' },
-        { role: 'informant', importance: 'minor', title: 'News Keeper' },
-        { role: 'scientist', importance: 'minor', title: 'Lore Keeper' }
-      ],
-      wasteland: [
-        { role: 'leader', importance: 'critical', title: 'Warlord' },
-        { role: 'warrior', importance: 'major', title: 'Raider Captain' },
-        { role: 'survivor', importance: 'major', title: 'Wasteland Expert' },
-        { role: 'guide', importance: 'major', title: 'Pathfinder' },
-        { role: 'medic', importance: 'major', title: 'Field Medic' },
-        { role: 'trader', importance: 'major', title: 'Scavenger Boss' },
-        { role: 'informant', importance: 'minor', title: 'Lookout' },
-        { role: 'engineer', importance: 'minor', title: 'Vehicle Expert' },
-        { role: 'merchant', importance: 'minor', title: 'Salvage Dealer' },
-        { role: 'scientist', importance: 'minor', title: 'Radiation Expert' }
-      ]
-    };
-
-    const templates = npcTemplates[regionType as keyof typeof npcTemplates] || npcTemplates.settlement;
-    const generatedNPCs: any[] = [];
-
-    for (const template of templates) {
-      const npc = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        scenarioId: currentScenario!.id,
-        name: `${template.title} of ${regionName}`,
-        role: template.role,
-        description: `An important ${template.role} in ${regionName}, serving the ${controllingFaction} faction.`,
-        location: regionName,
-        faction: controllingFaction,
-        importance: template.importance,
-        status: 'alive',
-        createdAt: new Date()
-      };
-      generatedNPCs.push(npc);
-    }
-
-    setNpcs(prev => [...prev, ...generatedNPCs]);
-    return generatedNPCs;
-  };
-
-  // Automatic region generation based on lore
-  const generateDefaultRegions = async (scenarioId: string) => {
-    const defaultRegions = [
-      {
-        name: "Cité Médicale",
-        type: "city" as const,
-        description: "« Les Blouses Blanches » - Spécialité : médicaments, chirurgie, prothèses, vaccins. Indispensable pour soigner blessures, maladies et radiations. Dirigée par un conseil de docteurs et apothicaires autoritaires.",
-        controllingFaction: "Les Blouses Blanches",
-        population: 15000,
-        resources: ["medicine", "technology"],
-        threatLevel: 2,
-        politicalStance: "neutral" as const
-      },
-      {
-        name: "Cité du Carburant",
-        type: "industrial" as const,
-        description: "« Les Raffineurs » - Spécialité : mazout, carburant synthétique, huiles. Contrôle les convois motorisés. Leurs raffineries sont aussi des forteresses mobiles.",
-        controllingFaction: "Les Raffineurs",
-        population: 12000,
-        resources: ["fuel", "technology"],
-        threatLevel: 3,
-        politicalStance: "hostile" as const
-      },
-      {
-        name: "Cité Industrielle",
-        type: "industrial" as const,
-        description: "« Les Forgerons d'Acier » - Spécialité : machines, pièces détachées, mécanique lourde. Maîtrise la production de véhicules et générateurs. Usines colossales, villes entières noyées dans la fumée.",
-        controllingFaction: "Les Forgerons d'Acier",
-        population: 25000,
-        resources: ["metal", "technology", "energy"],
-        threatLevel: 2,
-        politicalStance: "neutral" as const
-      },
-      {
-        name: "Cité de l'Eau & Alimentation",
-        type: "fortress" as const,
-        description: "« Les Gardiens de la Source » - Spécialité : serres blindées, puits, élevages, semences rares. Nourriture et eau = pouvoir vital. Fortifications autour de vastes réservoirs souterrains.",
-        controllingFaction: "Les Gardiens de la Source",
-        population: 18000,
-        resources: ["food", "water"],
-        threatLevel: 4,
-        politicalStance: "friendly" as const
-      },
-      {
-        name: "Cité du Divertissement",
-        type: "trade_hub" as const,
-        description: "« Les Faiseurs de Rêves » - Spécialité : arènes, spectacles, cinéma, propagande. Influence culturelle et morale énorme. Connue pour ses radios et journaux de masse.",
-        controllingFaction: "Les Faiseurs de Rêves",
-        population: 20000,
-        resources: ["information"],
-        threatLevel: 1,
-        politicalStance: "neutral" as const
-      },
-      {
-        name: "Nuke City",
-        type: "city" as const,
-        description: "« Le Réacteur à Ciel Ouvert » - Unique cité nucléaire de surface. Énergie colossale, défenses électrifiées, armes avancées. Ville lumineuse dans le désert, crainte de tous.",
-        controllingFaction: "Le Réacteur à Ciel Ouvert",
-        population: 8000,
-        resources: ["fuel", "technology", "weapons"],
-        threatLevel: 5,
-        politicalStance: "hostile" as const
-      },
-      {
-        name: "Cité des Métaux & Recyclage",
-        type: "industrial" as const,
-        description: "« Les Fossoyeurs » - Spécialité : récupération dans les ruines, fonderies, mines. Fournit tous les métaux et alliages rares. Cité construite dans un cimetière de gratte-ciels effondrés.",
-        controllingFaction: "Les Fossoyeurs",
-        population: 10000,
-        resources: ["metal"],
-        threatLevel: 3,
-        politicalStance: "neutral" as const
-      },
-      {
-        name: "Cité de l'Armement & Défense",
-        type: "fortress" as const,
-        description: "« Les Arsenaux » - Spécialité : armes à feu, explosifs, blindages, véhicules de guerre. Puissance militaire écrasante. La cité est un gigantesque complexe militaire.",
-        controllingFaction: "Les Arsenaux",
-        population: 22000,
-        resources: ["weapons", "metal", "technology"],
-        threatLevel: 5,
-        politicalStance: "hostile" as const
-      },
-      {
-        name: "L'Île des Anciens",
-        type: "city" as const,
-        description: "« Le Paradis Perdu » - Technologie pré-apocalyptique intacte, agriculture abondante. Autosuffisante, riche, civilisée. Certains doutent même qu'elle existe vraiment.",
-        controllingFaction: "Le Paradis Perdu",
-        population: 5000,
-        resources: ["technology", "food"],
-        threatLevel: 1,
-        politicalStance: "neutral" as const
-      },
-      {
-        name: "Bunker Oméga",
-        type: "fortress" as const,
-        description: "« Les Fantômes d'Acier » - Cité souterraine ultra-avancée, énergie nucléaire. Technologie la plus avancée du monde (armes, drones, IA rudimentaires). N'intervient pas officiellement, mais manipule la surface via espions et agents secrets.",
-        controllingFaction: "Les Fantômes d'Acier",
-        population: 3000,
-        resources: ["technology", "fuel", "information"],
-        threatLevel: 5,
-        politicalStance: "hostile" as const
-      }
-    ];
-
-    try {
-      for (const regionData of defaultRegions) {
-        await createRegion({ ...regionData, scenarioId });
-        // Generate 10 NPCs for this region
-        await generateRegionNPCs(regionData.name, regionData.type, regionData.controllingFaction);
-      }
-      console.log(`Generated ${defaultRegions.length} default regions with 10 NPCs each for scenario ${scenarioId}`);
-    } catch (error) {
-      console.error('Failed to generate default regions:', error);
-    }
   };
 
   const resetRegionForm = () => {
@@ -826,6 +827,63 @@ export function ScenarioBuilder() {
     return regionType?.icon || '📍';
   };
 
+  // Handle NPC form submission (create or update)
+  const handleCreateOrUpdateNPC = async () => {
+    if (!currentScenario || !npcForm.name || !npcForm.role) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const npcData = {
+        scenarioId: currentScenario.id,
+        ...npcForm
+      };
+
+      let response;
+      if (editingNPC) {
+        response = await fetch(`/api/scenario-npcs/${editingNPC.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(npcData)
+        });
+      } else {
+        response = await fetch('/api/scenario-npcs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(npcData)
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${editingNPC ? 'update' : 'create'} NPC: ${response.status}`);
+      }
+
+      const savedNpc = await response.json();
+
+      // Refresh NPCs data
+      await fetchScenarioData(currentScenario.id); // Re-fetch all scenario data to ensure consistency
+
+      setShowCreateNPC(false);
+      setEditingNPC(null);
+      setNpcForm({
+        name: '',
+        role: 'survivor',
+        description: '',
+        location: '',
+        faction: '',
+        importance: 'minor',
+        status: 'alive'
+      });
+
+    } catch (err) {
+      console.error('Error with NPC:', err);
+      setError(err instanceof Error ? err.message : `Failed to ${editingNPC ? 'update' : 'create'} NPC`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Effects
   useEffect(() => {
     fetchScenarios();
@@ -833,9 +891,18 @@ export function ScenarioBuilder() {
 
   useEffect(() => {
     if (currentScenario) {
-      fetchRegions(currentScenario.id);
+      fetchScenarioData(currentScenario.id);
     }
   }, [currentScenario]);
+
+  // Fetch NPCs for all regions when regions change
+  useEffect(() => {
+    if (regions.length > 0 && currentScenario) {
+      regions.forEach(region => {
+        fetchRegionNPCs(region.id, region.name);
+      });
+    }
+  }, [regions, currentScenario]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6">
@@ -851,7 +918,7 @@ export function ScenarioBuilder() {
                 Create immersive worlds with interactive scenarios, cities, and regions
               </p>
             </div>
-            
+
             {/* Advanced Toolbar */}
             <div className="flex items-center gap-3">
               <Button
@@ -863,7 +930,7 @@ export function ScenarioBuilder() {
                 <MapPin className="h-4 w-4 mr-2" />
                 Back to Session
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="outline"
@@ -873,7 +940,7 @@ export function ScenarioBuilder() {
                 <Globe className="h-4 w-4 mr-2" />
                 Templates
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="outline"
@@ -883,7 +950,7 @@ export function ScenarioBuilder() {
                 <Lightbulb className="h-4 w-4 mr-2" />
                 AI Suggest
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="outline"
@@ -894,7 +961,7 @@ export function ScenarioBuilder() {
                 <Settings className="h-4 w-4 mr-2" />
                 Bulk Actions ({selectedRegions.length})
               </Button>
-              
+
               <Button
                 size="sm"
                 onClick={() => {
@@ -920,7 +987,7 @@ export function ScenarioBuilder() {
               </Button>
             </div>
           </div>
-          
+
           {/* Search and Filter Bar */}
           {currentScenario && (
             <div className="flex items-center gap-4 mt-4 p-4 bg-slate-800/30 rounded-lg">
@@ -935,7 +1002,7 @@ export function ScenarioBuilder() {
                   />
                 </div>
               </div>
-              
+
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-48 bg-slate-700 border-slate-600 text-white">
                   <SelectValue />
@@ -947,7 +1014,7 @@ export function ScenarioBuilder() {
                   <SelectItem value="conditions" className="text-white">Conditions Only</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Badge variant="outline" className="text-slate-300">
                 {regions.length} regions • {npcs.length} NPCs • {quests.length + environmentalConditions.length} other items
               </Badge>
@@ -1066,11 +1133,11 @@ export function ScenarioBuilder() {
                       <TabsTrigger value="regions" className="text-white">{t('tabs.regions')} ({regions.length})</TabsTrigger>
                       <TabsTrigger value="quests" className="text-white">{t('tabs.quests')} ({quests.length})</TabsTrigger>
                       <TabsTrigger value="environment" className="text-white">{t('tabs.environment')} ({environmentalConditions.length})</TabsTrigger>
-                      <TabsTrigger value="characters" className="text-white">{t('tabs.characters')}</TabsTrigger>
-                      <TabsTrigger value="players" className="text-white">{t('tabs.players')}</TabsTrigger>
-                      <TabsTrigger value="library" className="text-white">{t('tabs.library')}</TabsTrigger>
+                      <TabsTrigger value="connections" className="text-white">{t('tabs.connections')}</TabsTrigger>
+                      <TabsTrigger value="ai-tools" className="text-white">{t('tabs.aiTools')}</TabsTrigger>
+                      <TabsTrigger value="import-export" className="text-white">{t('tabs.importExport')}</TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="overview" className="mt-6">
                       <div className="space-y-6">
                         {/* World Context */}
@@ -1082,7 +1149,7 @@ export function ScenarioBuilder() {
                             </p>
                           </div>
                         )}
-                        
+
                         {/* Political Situation */}
                         {currentScenario.politicalSituation && (
                           <div>
@@ -1092,7 +1159,7 @@ export function ScenarioBuilder() {
                             </p>
                           </div>
                         )}
-                        
+
                         {/* Key Themes */}
                         {currentScenario.keyThemes && currentScenario.keyThemes.length > 0 && (
                           <div>
@@ -1108,232 +1175,315 @@ export function ScenarioBuilder() {
                         )}
                       </div>
                     </TabsContent>
-                    
+
                     <TabsContent value="regions" className="mt-6">
-                      <div className="space-y-6">
-                        {/* Regions Header */}
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-white">Regions & Their NPCs</h3>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={() => setShowCreateNPC(true)}
-                              size="sm"
-                              variant="outline"
-                              className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
-                            >
-                              <Users className="h-4 w-4 mr-2" />
-                              Add NPC
-                            </Button>
-                            <Button
-                              onClick={() => setShowCreateRegion(true)}
-                              className="bg-orange-500 hover:bg-orange-600"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Region
-                            </Button>
-                          </div>
+                          <h3 className="text-lg font-semibold text-white">Regions & Their NPCs ({regions.length})</h3>
+                          <Button
+                            onClick={() => setShowCreateRegion(true)}
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Region
+                          </Button>
                         </div>
-                        
-                        {/* Regions with NPCs */}
-                        <div className="space-y-6">
-                          {regions.map((region) => {
-                            const regionNPCs = npcs.filter(npc => npc.location === region.name);
-                            return (
-                              <Card key={region.id} className="bg-slate-700/50 border-slate-600">
-                                <CardHeader className="pb-4">
-                                  <div className="flex items-center justify-between">
-                                    <CardTitle className="text-white flex items-center gap-2 text-xl">
-                                      <span className="text-2xl">{getRegionIcon(region.type)}</span>
-                                      {region.name}
-                                    </CardTitle>
+
+                        <div className="grid gap-4">
+                          {regions.map((region) => (
+                            <Card key={region.id} className="bg-slate-700/50 border-slate-600">
+                              <CardContent className="p-4">
+                                {/* Region Header */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-auto p-1 text-slate-400 hover:text-white"
+                                      onClick={() => setExpandedRegions(prev => ({
+                                        ...prev,
+                                        [region.id]: !prev[region.id]
+                                      }))}
+                                    >
+                                      {expandedRegions[region.id] ? '▼' : '▶'}
+                                    </Button>
                                     <div className="flex items-center gap-2">
-                                      <Badge variant="outline" className="text-purple-300 border-purple-400">
-                                        {regionNPCs.length} NPCs
-                                      </Badge>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setEditingRegion(region)}
-                                        title="Edit Region"
-                                      >
-                                        <Edit3 className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => deleteRegion(region.id)}
-                                        title="Delete Region"
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-400" />
-                                      </Button>
+                                      <span className="text-2xl">
+                                        {getRegionIcon(region.type)}
+                                      </span>
+                                      <div>
+                                        <h4 className="font-semibold text-white">{region.name}</h4>
+                                        <p className="text-sm text-slate-300 capitalize">{region.type.replace('_', ' ')}</p>
+                                      </div>
                                     </div>
                                   </div>
-                                  
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <Badge variant="outline">{region.type}</Badge>
-                                    <Badge variant={getThreatLevelColor(region.threatLevel)}>
-                                      Threat {region.threatLevel}
-                                    </Badge>
-                                    {region.politicalStance && (
-                                      <Badge variant="secondary">
-                                        {region.politicalStance}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  {region.description && (
-                                    <p className="text-slate-300 text-sm mb-3 leading-relaxed">
-                                      {region.description}
-                                    </p>
-                                  )}
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                    {region.controllingFaction && (
-                                      <div className="flex items-center gap-2 text-slate-300">
-                                        <Shield className="h-4 w-4" />
-                                        <span>{region.controllingFaction}</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <AlertTriangle className="h-4 w-4 text-red-400" />
+                                        <span className="text-sm text-slate-300">{region.threatLevel}/5</span>
                                       </div>
-                                    )}
-                                    
-                                    {region.population !== null && (
-                                      <div className="flex items-center gap-2 text-slate-300">
-                                        <Users className="h-4 w-4" />
-                                        <span>{region.population?.toLocaleString()} people</span>
-                                      </div>
-                                    )}
-                                    
-                                    {region.resources && region.resources.length > 0 && (
-                                      <div className="flex items-center gap-2 text-slate-300">
-                                        <Coins className="h-4 w-4" />
-                                        <div className="flex flex-wrap gap-1">
-                                          {region.resources.slice(0, 3).map((resource) => (
-                                            <Badge key={resource} variant="outline" className="text-xs">
-                                              {resource}
-                                            </Badge>
-                                          ))}
-                                          {region.resources.length > 3 && (
-                                            <Badge variant="outline" className="text-xs">
-                                              +{region.resources.length - 3} more
-                                            </Badge>
-                                          )}
+                                      {region.population !== null && (
+                                        <div className="flex items-center gap-1">
+                                          <Users className="h-4 w-4 text-blue-400" />
+                                          <span className="text-sm text-slate-300">{region.population.toLocaleString()}</span>
                                         </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </CardHeader>
-                                
-                                <CardContent className="pt-0">
-                                  <div className="border-t border-slate-600 pt-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <h4 className="font-semibold text-white flex items-center gap-2">
-                                        <Users className="h-4 w-4 text-purple-400" />
-                                        Region NPCs ({regionNPCs.length})
-                                      </h4>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                          setNpcForm(prev => ({ ...prev, location: region.name }));
-                                          setShowCreateNPC(true);
-                                        }}
-                                        className="text-purple-400 hover:text-purple-300"
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        Add NPC Here
-                                      </Button>
+                                      )}
+                                      <Badge variant="outline" className="text-xs text-slate-300">
+                                        {regionNpcs[region.id]?.length || 0} NPCs
+                                      </Badge>
                                     </div>
-                                    
-                                    {regionNPCs.length > 0 ? (
-                                      <div className="grid gap-2">
-                                        {regionNPCs.map((npc) => (
-                                          <div key={npc.id} className="bg-slate-800/50 rounded-lg p-3 border border-slate-600/50">
-                                            <div className="flex items-start justify-between">
-                                              <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                  <h5 className="font-medium text-white text-sm">{npc.name}</h5>
-                                                  <Badge variant={IMPORTANCE_LEVELS.find(l => l.value === npc.importance)?.color as any} className="text-xs">
-                                                    {NPC_ROLES.find(r => r.value === npc.role)?.icon} {NPC_ROLES.find(r => r.value === npc.role)?.label}
-                                                  </Badge>
-                                                  <Badge variant="outline" className="text-xs">
-                                                    {npc.status}
-                                                  </Badge>
-                                                </div>
-                                                {npc.description && (
-                                                  <p className="text-slate-300 text-xs mb-1 leading-relaxed">{npc.description}</p>
-                                                )}
-                                                <div className="flex items-center gap-3 text-xs text-slate-400">
-                                                  {npc.faction && (
-                                                    <span>⚔️ {npc.faction}</span>
-                                                  )}
-                                                  <span className="capitalize">{npc.importance} importance</span>
-                                                </div>
-                                              </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingRegion(region)}
+                                      className="text-slate-400 hover:text-white"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {region.description && (
+                                  <p className="text-slate-300 text-sm mb-3 line-clamp-2">{region.description}</p>
+                                )}
+
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {region.controllingFaction && (
+                                    <Badge variant="outline" className="text-blue-300 border-blue-400">
+                                      <Crown className="h-3 w-3 mr-1" />
+                                      {region.controllingFaction}
+                                    </Badge>
+                                  )}
+                                  {region.politicalStance && (
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`border-${
+                                        region.politicalStance === 'hostile' ? 'red' : 
+                                        region.politicalStance === 'friendly' ? 'green' : 
+                                        region.politicalStance === 'allied' ? 'blue' : 'gray'
+                                      }-400 text-${
+                                        region.politicalStance === 'hostile' ? 'red' : 
+                                        region.politicalStance === 'friendly' ? 'green' : 
+                                        region.politicalStance === 'allied' ? 'blue' : 'gray'
+                                      }-300`}
+                                    >
+                                      {region.politicalStance}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {region.resources && region.resources.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {region.resources.map((resource, index) => (
+                                      <Badge key={index} variant="secondary" className="text-xs bg-orange-500/20 text-orange-300">
+                                        {resource}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Expanded Region Content */}
+                                {expandedRegions[region.id] && (
+                                  <div className="mt-4 pt-4 border-t border-slate-600">
+                                    <Tabs 
+                                      value={activeRegionTab[region.id] || 'npcs'} 
+                                      onValueChange={(value) => setActiveRegionTab(prev => ({
+                                        ...prev,
+                                        [region.id]: value
+                                      }))}
+                                    >
+                                      <TabsList className="grid w-full grid-cols-3 bg-slate-600">
+                                        <TabsTrigger value="npcs" className="text-white">
+                                          <Users className="h-4 w-4 mr-2" />
+                                          NPCs ({regionNpcs[region.id]?.length || 0})
+                                        </TabsTrigger>
+                                        <TabsTrigger value="details" className="text-white">
+                                          <Settings className="h-4 w-4 mr-2" />
+                                          Details
+                                        </TabsTrigger>
+                                        <TabsTrigger value="connections" className="text-white">
+                                          <MapPin className="h-4 w-4 mr-2" />
+                                          Trade Routes
+                                        </TabsTrigger>
+                                      </TabsList>
+
+                                      <TabsContent value="npcs" className="mt-4">
+                                        <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="font-medium text-white">Regional NPCs</h5>
+                                            <div className="flex gap-2">
                                               <Button
                                                 size="sm"
-                                                variant="ghost"
-                                                onClick={() => setEditingNPC(npc)}
-                                                className="text-slate-400 hover:text-white p-1"
+                                                variant="outline"
+                                                onClick={() => generateRegionNPCs(region)}
+                                                disabled={generatingNpcsForRegion === region.id}
+                                                className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
                                               >
-                                                <Edit className="h-3 w-3" />
+                                                {generatingNpcsForRegion === region.id ? (
+                                                  <>
+                                                    <Shuffle className="h-4 w-4 mr-2 animate-spin" />
+                                                    Generating...
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Lightbulb className="h-4 w-4 mr-2" />
+                                                    Generate 10 NPCs
+                                                  </>
+                                                )}
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                  setNpcForm(prev => ({
+                                                    ...prev,
+                                                    location: region.name,
+                                                    faction: region.controllingFaction || ''
+                                                  }));
+                                                  setShowCreateNPC(true);
+                                                }}
+                                                className="bg-green-500 hover:bg-green-600"
+                                              >
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Add NPC
                                               </Button>
                                             </div>
                                           </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <div className="text-center py-6 text-slate-400 bg-slate-800/30 rounded-lg border border-slate-600/30">
-                                        <Users className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">No NPCs in this region yet</p>
-                                        <div className="flex items-center justify-center gap-2 mt-3">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => {
-                                              setNpcForm(prev => ({ ...prev, location: region.name }));
-                                              setShowCreateNPC(true);
-                                            }}
-                                            className="text-purple-400 hover:text-purple-300"
-                                          >
-                                            <Plus className="h-3 w-3 mr-1" />
-                                            Add NPC
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => generateRegionNPCs(region.name, region.type, region.controllingFaction || 'Independent')}
-                                            className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
-                                          >
-                                            <Zap className="h-3 w-3 mr-1" />
-                                            Generate 10 NPCs
-                                          </Button>
+
+                                          <div className="grid gap-3 max-h-64 overflow-y-auto">
+                                            {(regionNpcs[region.id] || []).map((npc) => (
+                                              <Card key={npc.id} className="bg-slate-600/50 border-slate-500">
+                                                <CardContent className="p-3">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                      <div className={`w-2 h-2 rounded-full ${
+                                                        npc.importance === 'critical' ? 'bg-red-400' :
+                                                        npc.importance === 'major' ? 'bg-orange-400' : 'bg-green-400'
+                                                      }`} />
+                                                      <h6 className="font-medium text-white text-sm">{npc.name}</h6>
+                                                      <Badge variant="outline" className="text-xs text-slate-300">
+                                                        {npc.role}
+                                                      </Badge>
+                                                    </div>
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      onClick={() => setEditingNPC(npc)}
+                                                      className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                                                    >
+                                                      <Edit className="h-3 w-3" />
+                                                    </Button>
+                                                  </div>
+                                                  {npc.description && (
+                                                    <p className="text-slate-300 text-xs line-clamp-2">{npc.description}</p>
+                                                  )}
+                                                  <div className="flex items-center gap-2 mt-2">
+                                                    {npc.faction && (
+                                                      <Badge variant="secondary" className="text-xs bg-blue-500/20 text-blue-300">
+                                                        {npc.faction}
+                                                      </Badge>
+                                                    )}
+                                                    <Badge 
+                                                      variant="outline" 
+                                                      className={`text-xs ${
+                                                        npc.status === 'alive' ? 'text-green-300 border-green-400' :
+                                                        npc.status === 'dead' ? 'text-red-300 border-red-400' :
+                                                        'text-yellow-300 border-yellow-400'
+                                                      }`}
+                                                    >
+                                                      {npc.status}
+                                                    </Badge>
+                                                  </div>
+                                                </CardContent>
+                                              </Card>
+                                            ))}
+                                            {(!regionNpcs[region.id] || regionNpcs[region.id].length === 0) && (
+                                              <div className="text-center py-6 text-slate-400">
+                                                <Users className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                                                <p className="text-sm">No NPCs in this region yet</p>
+                                                <p className="text-xs">Generate or create NPCs to populate this area</p>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      </TabsContent>
+
+                                      <TabsContent value="details" className="mt-4">
+                                        <div className="space-y-4 text-sm">
+                                          <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                              <Label className="text-slate-300">Type</Label>
+                                              <p className="text-white capitalize">{region.type.replace('_', ' ')}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-slate-300">Threat Level</Label>
+                                              <p className="text-white">{region.threatLevel}/5</p>
+                                            </div>
+                                            {region.population !== null && (
+                                              <div>
+                                                <Label className="text-slate-300">Population</Label>
+                                                <p className="text-white">{region.population.toLocaleString()}</p>
+                                              </div>
+                                            )}
+                                            {region.controllingFaction && (
+                                              <div>
+                                                <Label className="text-slate-300">Controlling Faction</Label>
+                                                <p className="text-white">{region.controllingFaction}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                          {region.description && (
+                                            <div>
+                                              <Label className="text-slate-300">Description</Label>
+                                              <p className="text-white">{region.description}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </TabsContent>
+
+                                      <TabsContent value="connections" className="mt-4">
+                                        <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <Label className="text-slate-300">Trade Routes & Connections</Label>
+                                            <Button size="sm" variant="outline" className="text-slate-400">
+                                              <Plus className="h-4 w-4 mr-1" />
+                                              Add Route
+                                            </Button>
+                                          </div>
+                                          {region.tradeRoutes && region.tradeRoutes.length > 0 ? (
+                                            <div className="space-y-2">
+                                              {region.tradeRoutes.map((route, index) => (
+                                                <div key={index} className="flex items-center gap-2 p-2 bg-slate-600/50 rounded">
+                                                  <MapPin className="h-4 w-4 text-orange-400" />
+                                                  <span className="text-white text-sm">{route}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="text-center py-4 text-slate-400">
+                                              <MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                                              <p className="text-sm">No trade routes established</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </TabsContent>
+                                    </Tabs>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {regions.length === 0 && (
+                            <div className="text-center py-8 text-slate-400">
+                              <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>No regions yet</p>
+                              <p className="text-sm">Create your first region to start building your world</p>
+                            </div>
+                          )}
                         </div>
-                        
-                        {regions.length === 0 && (
-                          <div className="text-center py-12 text-slate-400">
-                            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <h3 className="text-lg font-semibold mb-2">No regions yet</h3>
-                            <p className="mb-4">Add cities, settlements, and locations to bring your world to life</p>
-                            <Button
-                              onClick={() => setShowCreateRegion(true)}
-                              className="bg-orange-500 hover:bg-orange-600"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Create First Region
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     </TabsContent>
-                    
-                    
 
                     <TabsContent value="quests" className="mt-6">
                       <div className="space-y-4">
@@ -1348,7 +1498,7 @@ export function ScenarioBuilder() {
                             Add Quest
                           </Button>
                         </div>
-                        
+
                         <div className="grid gap-4">
                           {quests.map((quest) => (
                             <Card key={quest.id} className="bg-slate-700/50 border-slate-600">
@@ -1412,7 +1562,7 @@ export function ScenarioBuilder() {
                             Add Condition
                           </Button>
                         </div>
-                        
+
                         <div className="grid gap-4">
                           {environmentalConditions.map((condition) => (
                             <Card key={condition.id} className="bg-slate-700/50 border-slate-600">
@@ -1458,18 +1608,22 @@ export function ScenarioBuilder() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="characters" className="mt-6">
-                      <CharacterManager userId="demo-user" />
+                    <TabsContent value="connections" className="mt-6">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-white">World Connections</h3>
+                        <p className="text-slate-300">Manage trade routes, alliances, and conflicts between regions.</p>
+                        {/* Placeholder for future connection management UI */}
+                      </div>
                     </TabsContent>
-                    
-                    <TabsContent value="players" className="mt-6">
-                      <PlayerManager sessionId={currentSessionId} userId="demo-user" />
+
+                    <TabsContent value="ai-tools" className="mt-6">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-white">AI Tools</h3>
+                        <p className="text-slate-300">Utilize AI for generating ideas, descriptions, and more.</p>
+                        {/* Placeholder for AI tools */}
+                      </div>
                     </TabsContent>
-                    
-                    <TabsContent value="library" className="mt-6">
-                      <InteractiveLibrary showTitle={false} />
-                    </TabsContent>
-                    
+
                     <TabsContent value="import-export" className="mt-6">
                       <ImportExportControls
                         onImportComplete={(result) => {
@@ -1477,7 +1631,7 @@ export function ScenarioBuilder() {
                           // Refresh scenarios after import
                           fetchScenarios();
                           if (currentScenario) {
-                            fetchRegions(currentScenario.id);
+                            fetchScenarioData(currentScenario.id);
                           }
                         }}
                         onExportComplete={() => {
@@ -1536,7 +1690,7 @@ export function ScenarioBuilder() {
                     {scenarioForm.title.length}/200 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="mainIdea" className="text-white">Main Idea *</Label>
                   <Textarea
@@ -1558,7 +1712,7 @@ export function ScenarioBuilder() {
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="worldContext" className="text-white">World Context</Label>
                   <Textarea
@@ -1574,7 +1728,7 @@ export function ScenarioBuilder() {
                     {scenarioForm.worldContext?.length || 0}/10000 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="politicalSituation" className="text-white">Political Situation</Label>
                   <Textarea
@@ -1590,7 +1744,7 @@ export function ScenarioBuilder() {
                     {scenarioForm.politicalSituation?.length || 0}/10000 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-white mb-3 block">Key Themes</Label>
                   <div className="flex flex-wrap gap-2">
@@ -1610,9 +1764,9 @@ export function ScenarioBuilder() {
                     ))}
                   </div>
                 </div>
-                
+
                 <Separator className="bg-slate-600" />
-                
+
                 {/* Validation Errors */}
                 {validateScenarioForm().length > 0 && (
                   <div className="bg-red-900/20 border border-red-500 rounded-md p-3">
@@ -1627,7 +1781,7 @@ export function ScenarioBuilder() {
                     </ul>
                   </div>
                 )}
-                
+
                 <div className="flex justify-end gap-3">
                   <Button
                     variant="outline"
@@ -1679,7 +1833,7 @@ export function ScenarioBuilder() {
                     {scenarioForm.title.length}/200 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="edit-mainIdea" className="text-white">Main Idea *</Label>
                   <Textarea
@@ -1701,7 +1855,7 @@ export function ScenarioBuilder() {
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="edit-worldContext" className="text-white">World Context</Label>
                   <Textarea
@@ -1717,7 +1871,7 @@ export function ScenarioBuilder() {
                     {(scenarioForm.worldContext || '').length}/10000 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="edit-politicalSituation" className="text-white">Political Situation</Label>
                   <Textarea
@@ -1733,7 +1887,7 @@ export function ScenarioBuilder() {
                     {(scenarioForm.politicalSituation || '').length}/10000 characters
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-white">Key Themes</Label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
@@ -1796,7 +1950,7 @@ export function ScenarioBuilder() {
                     </div>
                   );
                 })()}
-                
+
                 <div className="flex justify-end gap-3">
                   <Button
                     variant="outline"
@@ -1840,7 +1994,7 @@ export function ScenarioBuilder() {
                     <Label htmlFor="regionName" className="text-white">Name *</Label>
                     <Input
                       id="regionName"
-                      value={editingRegion?.name || regionForm.name}
+                      value={editingRegion?.name ?? regionForm.name}
                       onChange={(e) => {
                         if (editingRegion) {
                           setEditingRegion(prev => prev ? { ...prev, name: e.target.value } : prev);
@@ -1852,11 +2006,11 @@ export function ScenarioBuilder() {
                       className="bg-slate-700 border-slate-600 text-white"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="regionType" className="text-white">Type *</Label>
                     <Select
-                      value={editingRegion?.type || regionForm.type}
+                      value={editingRegion?.type ?? regionForm.type}
                       onValueChange={(value) => {
                         if (editingRegion) {
                           setEditingRegion(prev => prev ? { ...prev, type: value as any } : prev);
@@ -1878,12 +2032,12 @@ export function ScenarioBuilder() {
                     </Select>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="regionDescription" className="text-white">Description</Label>
                   <Textarea
                     id="regionDescription"
-                    value={editingRegion?.description || regionForm.description}
+                    value={editingRegion?.description ?? regionForm.description}
                     onChange={(e) => {
                       if (editingRegion) {
                         setEditingRegion(prev => prev ? { ...prev, description: e.target.value } : prev);
@@ -1895,13 +2049,13 @@ export function ScenarioBuilder() {
                     className="bg-slate-700 border-slate-600 text-white h-24"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="controllingFaction" className="text-white">Controlling Faction</Label>
                     <Input
                       id="controllingFaction"
-                      value={editingRegion?.controllingFaction || regionForm.controllingFaction}
+                      value={editingRegion?.controllingFaction ?? regionForm.controllingFaction}
                       onChange={(e) => {
                         if (editingRegion) {
                           setEditingRegion(prev => prev ? { ...prev, controllingFaction: e.target.value } : prev);
@@ -1913,13 +2067,13 @@ export function ScenarioBuilder() {
                       className="bg-slate-700 border-slate-600 text-white"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="population" className="text-white">Population</Label>
                     <Input
                       id="population"
                       type="number"
-                      value={editingRegion?.population || regionForm.population}
+                      value={editingRegion?.population ?? regionForm.population}
                       onChange={(e) => {
                         const value = parseInt(e.target.value) || 0;
                         if (editingRegion) {
@@ -1933,12 +2087,12 @@ export function ScenarioBuilder() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="threatLevel" className="text-white">Threat Level (1-5)</Label>
                     <Select
-                      value={String(editingRegion?.threatLevel || regionForm.threatLevel)}
+                      value={String(editingRegion?.threatLevel ?? regionForm.threatLevel)}
                       onValueChange={(value) => {
                         const level = parseInt(value);
                         if (editingRegion) {
@@ -1960,11 +2114,11 @@ export function ScenarioBuilder() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="politicalStance" className="text-white">Political Stance</Label>
                     <Select
-                      value={editingRegion?.politicalStance || regionForm.politicalStance}
+                      value={editingRegion?.politicalStance ?? regionForm.politicalStance}
                       onValueChange={(value) => {
                         if (editingRegion) {
                           setEditingRegion(prev => prev ? { ...prev, politicalStance: value as any } : prev);
@@ -1986,12 +2140,12 @@ export function ScenarioBuilder() {
                     </Select>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-white mb-3 block">Available Resources</Label>
                   <div className="flex flex-wrap gap-2">
                     {COMMON_RESOURCES.map((resource) => {
-                      const currentResources = editingRegion?.resources || regionForm.resources || [];
+                      const currentResources = editingRegion?.resources ?? regionForm.resources ?? [];
                       const isSelected = currentResources.includes(resource);
                       return (
                         <Badge
@@ -2020,9 +2174,9 @@ export function ScenarioBuilder() {
                     })}
                   </div>
                 </div>
-                
+
                 <Separator className="bg-slate-600" />
-                
+
                 <div className="flex justify-end gap-3">
                   <Button
                     variant="outline"
@@ -2043,7 +2197,7 @@ export function ScenarioBuilder() {
                           type: editingRegion.type,
                           description: editingRegion.description || undefined,
                           controllingFaction: editingRegion.controllingFaction || undefined,
-                          population: editingRegion.population || undefined,
+                          population: editingRegion.population !== null ? editingRegion.population : undefined,
                           resources: editingRegion.resources || undefined,
                           threatLevel: editingRegion.threatLevel,
                           politicalStance: editingRegion.politicalStance || undefined
@@ -2053,9 +2207,7 @@ export function ScenarioBuilder() {
                       }
                     }}
                     disabled={
-                      editingRegion 
-                        ? !editingRegion.name || loading
-                        : !regionForm.name || loading
+                      (editingRegion ? !editingRegion.name : !regionForm.name) || loading
                     }
                     className="bg-orange-500 hover:bg-orange-600"
                   >
@@ -2072,7 +2224,7 @@ export function ScenarioBuilder() {
         )}
 
         {/* Create NPC Modal */}
-        {(showCreateNPC || editingNPC) && (
+        {showCreateNPC && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-2xl bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto">
               <CardHeader>
@@ -2080,176 +2232,143 @@ export function ScenarioBuilder() {
                   {editingNPC ? 'Edit NPC' : 'Create New NPC'}
                 </CardTitle>
                 <CardDescription className="text-slate-300">
-                  {editingNPC ? 'Update character details' : 'Add a new character to your scenario'}
+                  Add characters to populate your scenario regions
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="npcName" className="text-white">Name *</Label>
+                <div>
+                  <Label htmlFor="npc-name" className="text-white">Name *</Label>
+                  <div className="flex gap-2">
                     <Input
-                      id="npcName"
-                      value={editingNPC?.name || npcForm.name}
-                      onChange={(e) => {
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { ...prev, name: e.target.value } : prev);
-                        } else {
-                          setNpcForm(prev => ({ ...prev, name: e.target.value }));
-                        }
-                      }}
-                      placeholder="Enter character name..."
+                      id="npc-name"
+                      value={npcForm.name}
+                      onChange={(e) => setNpcForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter NPC name..."
                       className="bg-slate-700 border-slate-600 text-white"
                     />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setNpcForm(prev => ({ ...prev, name: generateNPCName() }))}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
                   </div>
-                  
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="npcRole" className="text-white">Role *</Label>
+                    <Label htmlFor="npc-role" className="text-white">Role *</Label>
                     <Select
-                      value={editingNPC?.role || npcForm.role}
-                      onValueChange={(value) => {
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { ...prev, role: value } : prev);
-                        } else {
-                          setNpcForm(prev => ({ ...prev, role: value }));
-                        }
-                      }}
+                      value={npcForm.role}
+                      onValueChange={(value) => setNpcForm(prev => ({ ...prev, role: value }))}
                     >
                       <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                        <SelectValue />
+                        <SelectValue placeholder="Select role" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
+                      <SelectContent className="bg-slate-700 border-slate-600">
                         {NPC_ROLES.map((role) => (
-                          <SelectItem key={role.value} value={role.value} className="text-white">
+                          <SelectItem key={role.value} value={role.value}>
                             {role.icon} {role.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="npcDescription" className="text-white">Description</Label>
-                  <Textarea
-                    id="npcDescription"
-                    value={editingNPC?.description || npcForm.description}
-                    onChange={(e) => {
-                      if (editingNPC) {
-                        setEditingNPC(prev => prev ? { ...prev, description: e.target.value } : prev);
-                      } else {
-                        setNpcForm(prev => ({ ...prev, description: e.target.value }));
-                      }
-                    }}
-                    placeholder="Describe the character's appearance, personality, and background..."
-                    className="bg-slate-700 border-slate-600 text-white h-24"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="npcLocation" className="text-white">Location/Region</Label>
+                    <Label htmlFor="npc-importance" className="text-white">Importance</Label>
                     <Select
-                      value={editingNPC?.location || npcForm.location}
-                      onValueChange={(value) => {
-                        const selectedRegion = regions.find(r => r.name === value);
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { 
-                            ...prev, 
-                            location: value,
-                            faction: selectedRegion?.controllingFaction || prev.faction 
-                          } : prev);
-                        } else {
-                          setNpcForm(prev => ({ 
-                            ...prev, 
-                            location: value,
-                            faction: selectedRegion?.controllingFaction || prev.faction 
-                          }));
-                        }
-                      }}
+                      value={npcForm.importance}
+                      onValueChange={(value) => setNpcForm(prev => ({ ...prev, importance: value }))}
                     >
                       <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                        <SelectValue placeholder="Select a region..." />
+                        <SelectValue placeholder="Select importance" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
-                        {regions.map((region) => (
-                          <SelectItem key={region.id} value={region.name} className="text-white">
-                            {getRegionIcon(region.type)} {region.name}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="other" className="text-white">
-                          🌍 Other Location
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="npcFaction" className="text-white">Faction</Label>
-                    <Input
-                      id="npcFaction"
-                      value={editingNPC?.faction || npcForm.faction}
-                      onChange={(e) => {
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { ...prev, faction: e.target.value } : prev);
-                        } else {
-                          setNpcForm(prev => ({ ...prev, faction: e.target.value }));
-                        }
-                      }}
-                      placeholder="Which faction or group?"
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="npcImportance" className="text-white">Importance</Label>
-                    <Select
-                      value={editingNPC?.importance || npcForm.importance}
-                      onValueChange={(value) => {
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { ...prev, importance: value as any } : prev);
-                        } else {
-                          setNpcForm(prev => ({ ...prev, importance: value as any }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
+                      <SelectContent className="bg-slate-700 border-slate-600">
                         {IMPORTANCE_LEVELS.map((level) => (
-                          <SelectItem key={level.value} value={level.value} className="text-white">
+                          <SelectItem key={level.value} value={level.value}>
                             {level.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="npcStatus" className="text-white">Status</Label>
+                    <Label htmlFor="npc-location" className="text-white">Location/Region</Label>
                     <Select
-                      value={editingNPC?.status || npcForm.status}
+                      value={npcForm.location}
                       onValueChange={(value) => {
-                        if (editingNPC) {
-                          setEditingNPC(prev => prev ? { ...prev, status: value as any } : prev);
-                        } else {
-                          setNpcForm(prev => ({ ...prev, status: value as any }));
+                        setNpcForm(prev => ({ ...prev, location: value }));
+                        // Auto-set faction based on region
+                        const region = regions.find(r => r.name === value);
+                        if (region?.controllingFaction) {
+                          setNpcForm(prev => ({ ...prev, faction: region.controllingFaction || '' }));
                         }
                       }}
                     >
                       <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                        <SelectValue />
+                        <SelectValue placeholder="Select region" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
-                        <SelectItem value="alive" className="text-white">Alive</SelectItem>
-                        <SelectItem value="dead" className="text-white">Dead</SelectItem>
-                        <SelectItem value="missing" className="text-white">Missing</SelectItem>
-                        <SelectItem value="unknown" className="text-white">Unknown</SelectItem>
+                      <SelectContent className="bg-slate-700 border-slate-600">
+                        {regions.map((region) => (
+                          <SelectItem key={region.id} value={region.name}>
+                            {getRegionIcon(region.type)} {region.name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="other">
+                          🌍 Other Location
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div>
+                    <Label htmlFor="npc-faction" className="text-white">Faction</Label>
+                    <Input
+                      id="npc-faction"
+                      value={npcForm.faction}
+                      onChange={(e) => setNpcForm(prev => ({ ...prev, faction: e.target.value }))}
+                      placeholder="Which faction do they belong to?"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="npc-description" className="text-white">Description</Label>
+                  <Textarea
+                    id="npc-description"
+                    value={npcForm.description}
+                    onChange={(e) => setNpcForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe the NPC's appearance, personality, and motivations..."
+                    className="bg-slate-700 border-slate-600 text-white min-h-24"
+                  />
+                  {npcForm.role && npcForm.location && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 border-orange-500 text-orange-400 hover:bg-orange-500/10"
+                      onClick={() => {
+                        const region = regions.find(r => r.name === npcForm.location);
+                        if (region) {
+                          const autoDescription = getDescriptionByRole(npcForm.role, region);
+                          setNpcForm(prev => ({ 
+                            ...prev, 
+                            description: autoDescription 
+                          }));
+                        }
+                      }}
+                    >
+                      <Lightbulb className="h-4 w-4 mr-2" />
+                      Auto-generate description
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3">
@@ -2258,42 +2377,26 @@ export function ScenarioBuilder() {
                     onClick={() => {
                       setShowCreateNPC(false);
                       setEditingNPC(null);
-                      setNpcForm({ name: '', role: 'survivor', description: '', location: '', faction: '', importance: 'minor', status: 'alive' });
+                      setNpcForm({
+                        name: '',
+                        role: 'survivor',
+                        description: '',
+                        location: '',
+                        faction: '',
+                        importance: 'minor',
+                        status: 'alive'
+                      });
                     }}
-                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                    className="border-slate-600 text-slate-300"
                   >
                     Cancel
                   </Button>
                   <Button
-                    onClick={() => {
-                      // For demo - would normally call API
-                      const newNPC: ScenarioNPC = {
-                        id: Date.now().toString(),
-                        scenarioId: currentScenario!.id,
-                        name: editingNPC?.name || npcForm.name,
-                        role: editingNPC?.role || npcForm.role,
-                        description: editingNPC?.description || npcForm.description,
-                        location: editingNPC?.location || npcForm.location || null,
-                        faction: editingNPC?.faction || npcForm.faction || null,
-                        importance: (editingNPC?.importance || npcForm.importance) as 'minor' | 'major' | 'critical',
-                        status: (editingNPC?.status || npcForm.status) as 'alive' | 'dead' | 'missing' | 'unknown',
-                        createdAt: new Date()
-                      };
-                      
-                      if (editingNPC) {
-                        setNpcs(prev => prev.map(n => n.id === editingNPC.id ? newNPC : n));
-                        setEditingNPC(null);
-                      } else {
-                        setNpcs(prev => [...prev, newNPC]);
-                        setShowCreateNPC(false);
-                      }
-                      setNpcForm({ name: '', role: 'survivor', description: '', location: '', faction: '', importance: 'minor', status: 'alive' });
-                    }}
-                    disabled={!(editingNPC?.name || npcForm.name)}
-                    className="bg-orange-500 hover:bg-orange-600"
+                    onClick={handleCreateOrUpdateNPC}
+                    disabled={!npcForm.name || !npcForm.role || loading}
+                    className="bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="h-4 w-4 mr-2" />
-                    {editingNPC ? 'Update' : 'Create'} NPC
+                    {editingNPC ? 'Update NPC' : 'Create NPC'}
                   </Button>
                 </div>
               </CardContent>
@@ -2318,7 +2421,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="questTitle" className="text-white">Title *</Label>
                   <Input
                     id="questTitle"
-                    value={editingQuest?.title || questForm.title}
+                    value={editingQuest?.title ?? questForm.title}
                     onChange={(e) => {
                       if (editingQuest) {
                         setEditingQuest(prev => prev ? { ...prev, title: e.target.value } : prev);
@@ -2335,7 +2438,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="questDescription" className="text-white">Description *</Label>
                   <Textarea
                     id="questDescription"
-                    value={editingQuest?.description || questForm.description}
+                    value={editingQuest?.description ?? questForm.description}
                     onChange={(e) => {
                       if (editingQuest) {
                         setEditingQuest(prev => prev ? { ...prev, description: e.target.value } : prev);
@@ -2352,7 +2455,7 @@ export function ScenarioBuilder() {
                   <div>
                     <Label htmlFor="questPriority" className="text-white">Priority</Label>
                     <Select
-                      value={editingQuest?.priority || questForm.priority}
+                      value={editingQuest?.priority ?? questForm.priority}
                       onValueChange={(value) => {
                         if (editingQuest) {
                           setEditingQuest(prev => prev ? { ...prev, priority: value as any } : prev);
@@ -2373,11 +2476,11 @@ export function ScenarioBuilder() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="questStatus" className="text-white">Status</Label>
                     <Select
-                      value={editingQuest?.status || questForm.status}
+                      value={editingQuest?.status ?? questForm.status}
                       onValueChange={(value) => {
                         if (editingQuest) {
                           setEditingQuest(prev => prev ? { ...prev, status: value as any } : prev);
@@ -2403,7 +2506,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="questRequirements" className="text-white">Requirements</Label>
                   <Input
                     id="questRequirements"
-                    value={editingQuest?.requirements || questForm.requirements}
+                    value={editingQuest?.requirements ?? questForm.requirements}
                     onChange={(e) => {
                       if (editingQuest) {
                         setEditingQuest(prev => prev ? { ...prev, requirements: e.target.value } : prev);
@@ -2420,7 +2523,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="questRewards" className="text-white">Rewards</Label>
                   <Input
                     id="questRewards"
-                    value={editingQuest?.rewards || questForm.rewards}
+                    value={editingQuest?.rewards ?? questForm.rewards}
                     onChange={(e) => {
                       if (editingQuest) {
                         setEditingQuest(prev => prev ? { ...prev, rewards: e.target.value } : prev);
@@ -2451,15 +2554,15 @@ export function ScenarioBuilder() {
                       const newQuest: ScenarioQuest = {
                         id: Date.now().toString(),
                         scenarioId: currentScenario!.id,
-                        title: editingQuest?.title || questForm.title,
-                        description: editingQuest?.description || questForm.description,
-                        status: (editingQuest?.status || questForm.status) as 'not_started' | 'active' | 'completed' | 'failed',
-                        priority: (editingQuest?.priority || questForm.priority) as 'low' | 'medium' | 'high' | 'critical',
-                        rewards: editingQuest?.rewards || questForm.rewards || null,
-                        requirements: editingQuest?.requirements || questForm.requirements || null,
+                        title: editingQuest?.title ?? questForm.title,
+                        description: editingQuest?.description ?? questForm.description,
+                        status: (editingQuest?.status ?? questForm.status) as 'not_started' | 'active' | 'completed' | 'failed',
+                        priority: (editingQuest?.priority ?? questForm.priority) as 'low' | 'medium' | 'high' | 'critical',
+                        rewards: editingQuest?.rewards ?? questForm.rewards || null,
+                        requirements: editingQuest?.requirements ?? questForm.requirements || null,
                         createdAt: new Date()
                       };
-                      
+
                       if (editingQuest) {
                         setQuests(prev => prev.map(q => q.id === editingQuest.id ? newQuest : q));
                         setEditingQuest(null);
@@ -2498,7 +2601,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="conditionName" className="text-white">Name *</Label>
                   <Input
                     id="conditionName"
-                    value={editingCondition?.name || conditionForm.name}
+                    value={editingCondition?.name ?? conditionForm.name}
                     onChange={(e) => {
                       if (editingCondition) {
                         setEditingCondition(prev => prev ? { ...prev, name: e.target.value } : prev);
@@ -2515,7 +2618,7 @@ export function ScenarioBuilder() {
                   <Label htmlFor="conditionDescription" className="text-white">Description *</Label>
                   <Textarea
                     id="conditionDescription"
-                    value={editingCondition?.description || conditionForm.description}
+                    value={editingCondition?.description ?? conditionForm.description}
                     onChange={(e) => {
                       if (editingCondition) {
                         setEditingCondition(prev => prev ? { ...prev, description: e.target.value } : prev);
@@ -2532,7 +2635,7 @@ export function ScenarioBuilder() {
                   <div>
                     <Label htmlFor="conditionSeverity" className="text-white">Severity</Label>
                     <Select
-                      value={editingCondition?.severity || conditionForm.severity}
+                      value={editingCondition?.severity ?? conditionForm.severity}
                       onValueChange={(value) => {
                         if (editingCondition) {
                           setEditingCondition(prev => prev ? { ...prev, severity: value as any } : prev);
@@ -2553,12 +2656,12 @@ export function ScenarioBuilder() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="conditionDuration" className="text-white">Duration</Label>
                     <Input
                       id="conditionDuration"
-                      value={editingCondition?.duration || conditionForm.duration}
+                      value={editingCondition?.duration ?? conditionForm.duration}
                       onChange={(e) => {
                         if (editingCondition) {
                           setEditingCondition(prev => prev ? { ...prev, duration: e.target.value } : prev);
@@ -2576,7 +2679,7 @@ export function ScenarioBuilder() {
                   <Label className="text-white mb-3 block">Affected Regions</Label>
                   <div className="flex flex-wrap gap-2">
                     {regions.map((region) => {
-                      const currentAffected = editingCondition?.affectedRegions || conditionForm.affectedRegions;
+                      const currentAffected = editingCondition?.affectedRegions ?? conditionForm.affectedRegions;
                       const isSelected = currentAffected.includes(region.id);
                       return (
                         <Badge
@@ -2628,14 +2731,14 @@ export function ScenarioBuilder() {
                       const newCondition: EnvironmentalCondition = {
                         id: Date.now().toString(),
                         scenarioId: currentScenario!.id,
-                        name: editingCondition?.name || conditionForm.name,
-                        description: editingCondition?.description || conditionForm.description,
-                        severity: (editingCondition?.severity || conditionForm.severity) as 'mild' | 'moderate' | 'severe' | 'extreme',
-                        affectedRegions: editingCondition?.affectedRegions || conditionForm.affectedRegions,
-                        duration: editingCondition?.duration || conditionForm.duration || null,
+                        name: editingCondition?.name ?? conditionForm.name,
+                        description: editingCondition?.description ?? conditionForm.description,
+                        severity: (editingCondition?.severity ?? conditionForm.severity) as 'mild' | 'moderate' | 'severe' | 'extreme',
+                        affectedRegions: editingCondition?.affectedRegions ?? conditionForm.affectedRegions,
+                        duration: editingCondition?.duration ?? conditionForm.duration || null,
                         createdAt: new Date()
                       };
-                      
+
                       if (editingCondition) {
                         setEnvironmentalConditions(prev => prev.map(c => c.id === editingCondition.id ? newCondition : c));
                         setEditingCondition(null);
@@ -2701,7 +2804,7 @@ export function ScenarioBuilder() {
                     </Card>
                   ))}
                 </div>
-                
+
                 <div className="flex justify-end mt-6">
                   <Button
                     variant="outline"
@@ -2763,6 +2866,13 @@ export function ScenarioBuilder() {
                                   createdAt: new Date()
                                 };
                                 setNpcs(prev => [...prev, newNPC]);
+                                // Optionally update regionNpcs as well if location is known/set
+                                if (newNPC.location) {
+                                  setRegionNpcs(prev => ({
+                                    ...prev,
+                                    [newNPC.location!]: [...(prev[newNPC.location!] || []), newNPC]
+                                  }));
+                                }
                               }}
                               className="bg-purple-600 hover:bg-purple-700"
                             >
@@ -2774,7 +2884,7 @@ export function ScenarioBuilder() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Target className="h-4 w-4" /> Suggested Quests
@@ -2818,7 +2928,7 @@ export function ScenarioBuilder() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
