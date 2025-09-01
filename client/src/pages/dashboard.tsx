@@ -20,6 +20,8 @@ import type { CreatorMode, AiMode, SessionData, NodeData, ConnectionData, Timeli
 import type { Session, Node, Connection, TimelineEvent } from "@shared/schema";
 import { SessionScenarioLinker } from "@/components/session-scenario-linker";
 import { LinkedScenariosPanel } from "@/components/linked-scenarios-panel";
+import { SessionNotes } from "@/components/session-notes";
+import { SessionTracker } from "@/components/session-tracker";
 
 export default function Dashboard() {
   const { sessionId } = useParams();
@@ -312,6 +314,15 @@ export default function Dashboard() {
                 <LinkedScenariosPanel sessionId={session.id} />
               )}
 
+              {/* Session Notes & Progress */}
+              {session && (
+                <SessionNotes
+                  sessionId={session.id}
+                  scenarioId={undefined}
+                  players={['Player 1', 'Player 2', 'Player 3']} // TODO: Get from actual player management
+                />
+              )}
+
               {/* Timeline Manager */}
               {session && (
                 <TimelineManager
@@ -335,6 +346,15 @@ export default function Dashboard() {
 
             {/* Right Column - AI Tools & Controls */}
             <div className="space-y-6">
+              {/* Session Tracker */}
+              {session && (
+                <SessionTracker
+                  sessionId={session.id}
+                  scenarioId={undefined}
+                  players={['Player 1', 'Player 2', 'Player 3']} // TODO: Get from actual player management
+                />
+              )}
+
               {/* Session-Scenario Linker */}
               <SessionScenarioLinker
                 currentSessionId={session?.id}
