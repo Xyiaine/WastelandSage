@@ -227,6 +227,8 @@ const SCENARIO_TEMPLATES = [
 ];
 
 export function ScenarioBuilder() {
+  const { t } = useTranslation();
+  
   // State management
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
