@@ -261,28 +261,26 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-white flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-400" />
-              Session Notes & Progress
-            </CardTitle>
-            <CardDescription className="text-slate-300">
-              Track player choices, take notes, and monitor scenario progress
-            </CardDescription>
-          </div>
-          <Button
-            onClick={saveToStorage}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save All
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="heading-minimal flex items-center gap-3">
+            <BookOpen className="h-5 w-5 text-rust" />
+            Session Notes
+          </h2>
+          <p className="text-minimal mt-1">
+            Track player choices, take notes, and monitor scenario progress
+          </p>
         </div>
-      </CardHeader>
+        <Button
+          onClick={saveToStorage}
+          size="sm"
+          className="btn-rust"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Save
+        </Button>
+      </div>
       <CardContent>
         {/* Search Bar */}
         <div className="mb-6">
@@ -298,14 +296,14 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-slate-700">
-            <TabsTrigger value="notes" className="text-white">
+          <TabsList className="grid w-full grid-cols-3 glass-card rounded-lg p-1">
+            <TabsTrigger value="notes" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
               Notes ({filteredNotes.length})
             </TabsTrigger>
-            <TabsTrigger value="choices" className="text-white">
-              Player Choices ({filteredChoices.length})
+            <TabsTrigger value="choices" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
+              Choices ({filteredChoices.length})
             </TabsTrigger>
-            <TabsTrigger value="progress" className="text-white">
+            <TabsTrigger value="progress" className="text-foreground data-[state=active]:bg-rust/20 data-[state=active]:text-rust">
               Progress ({filteredProgress.length})
             </TabsTrigger>
           </TabsList>
@@ -326,15 +324,14 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
 
               {/* New Note Form */}
               {showNewNoteForm && (
-                <Card className="bg-slate-700/50 border-slate-600">
-                  <CardContent className="p-4 space-y-4">
+                <div className="glass-card rounded-xl p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-white">Type</Label>
                         <select
                           value={newNote.type}
                           onChange={(e) => setNewNote(prev => ({ ...prev, type: e.target.value as SessionNote['type'] }))}
-                          className="w-full bg-slate-600 border-slate-500 text-white rounded px-3 py-2"
+                          className="input-minimal w-full"
                         >
                           <option value="general">General Note</option>
                           <option value="player_choice">Player Choice</option>
@@ -364,7 +361,7 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
                         value={newNote.title}
                         onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Brief note title..."
-                        className="bg-slate-600 border-slate-500 text-white"
+                        className="input-minimal"
                       />
                     </div>
 
@@ -374,7 +371,7 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
                         value={newNote.content}
                         onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
                         placeholder="Detailed note content..."
-                        className="bg-slate-600 border-slate-500 text-white h-24"
+                        className="input-minimal h-24 resize-none"
                       />
                     </div>
 
@@ -405,12 +402,12 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
                     <div className="flex justify-end gap-2">
                       <Button
                         onClick={() => setShowNewNoteForm(false)}
-                        variant="outline"
-                        className="border-slate-600 text-slate-300"
+                        className="btn-ghost"
+                        size="sm"
                       >
                         Cancel
                       </Button>
-                      <Button onClick={addNote} className="bg-blue-600 hover:bg-blue-700">
+                      <Button onClick={addNote} className="btn-rust" size="sm">
                         Add Note
                       </Button>
                     </div>

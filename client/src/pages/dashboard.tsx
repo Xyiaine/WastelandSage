@@ -180,107 +180,89 @@ export default function Dashboard() {
   const isLoading = sessionLoading || nodesLoading || connectionsLoading || timelineLoading;
 
   return (
-    <div className="min-h-screen bg-steel-800 text-gray-200 font-sans">
-      {/* Header */}
-      <header className="metal-panel border-b-2 border-rust-500 p-4 mb-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-rust-500 rounded-lg flex items-center justify-center">
-              <Skull className="text-steel-800 text-xl" />
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Minimalist Header */}
+      <header className="header-minimal sticky top-0 z-50 py-4">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 gradient-rust rounded-lg flex items-center justify-center shadow-lg">
+              <Skull className="text-white text-lg" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-rust-400">{t('app.title')}</h1>
-              <p className="text-sm text-gray-400 font-mono">{t('app.subtitle')}</p>
+              <h1 className="text-xl font-light tracking-wide text-foreground">{t('app.title')}</h1>
+              <p className="text-xs text-muted-foreground font-mono opacity-75">{t('app.subtitle')}</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             {/* Language Switcher */}
             <LanguageSwitcher />
 
-            {/* AI Status Indicator */}
-            <div className="flex items-center space-x-2 bg-steel-700 px-3 py-2 rounded-lg">
-              <div className="w-2 h-2 bg-toxic-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-mono">AI Online</span>
+            {/* AI Status - Minimal */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30">
+              <div className="status-dot status-active"></div>
+              <span className="text-xs font-medium">AI</span>
             </div>
 
-            {/* Session Timer */}
-            <div className="bg-steel-700 px-3 py-2 rounded-lg font-mono text-sm">
-              <span>{formatDuration(sessionDuration + (session?.duration || 0))}</span>
+            {/* Session Timer - Minimal */}
+            <div className="px-3 py-1.5 rounded-full bg-muted/30 font-mono text-xs">
+              {formatDuration(sessionDuration + (session?.duration || 0))}
             </div>
 
-            {/* Scenario Builder Button */}
-            <Link href="/scenarios">
+            {/* Clean Action Buttons */}
+            <div className="flex items-center gap-2">
+              <Link href="/scenarios">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="btn-ghost"
+                  data-testid="button-scenario-builder"
+                >
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </Link>
+
               <Button
-                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
-                data-testid="button-scenario-builder"
-                onClick={(e) => {
-                  console.log('Scenario Builder button clicked, navigating to /scenarios');
-                  e.stopPropagation();
-                }}
+                onClick={handleExportSession}
+                variant="ghost"
+                size="sm"
+                className="btn-ghost"
+                disabled={!session}
+                data-testid="button-export"
               >
-                <MapPin className="mr-2 h-4 w-4" />
-                {t('navigation.scenarios')}
+                <Download className="h-4 w-4" />
               </Button>
-            </Link>
 
-            {/* Quick Export Button */}
-            <Button
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = '/api/scenarios/export?userId=demo-user';
-                link.download = `scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
-              data-testid="button-quick-export"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {t('scenario.export')}
-            </Button>
-
-            {/* Export Button */}
-            <Button
-              onClick={handleExportSession}
-              className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
-              disabled={!session}
-              data-testid="button-export"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {t('common.save')}
-            </Button>
-
-            {/* Quick Session-Scenario Link Button */}
-            {session && (
-              <Button
-                onClick={() => {
-                  // Scroll to session-scenario linker component
-                  const linkerElement = document.querySelector('[data-component="session-scenario-linker"]');
-                  if (linkerElement) {
-                    linkerElement.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className="industrial-button px-4 py-2 rounded-lg text-sm font-medium"
-                data-testid="button-manage-scenarios"
-              >
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Link Scenarios
-              </Button>
-            )}
+              {session && (
+                <Button
+                  onClick={() => {
+                    const linkerElement = document.querySelector('[data-component="session-scenario-linker"]');
+                    if (linkerElement) {
+                      linkerElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="btn-ghost"
+                  data-testid="button-manage-scenarios"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 pb-8">
-
-        {/* Creator Mode Toggle */}
-        <div className="flex justify-center mb-6">
-          <CreatorModeToggle
-            currentMode={creatorMode}
-            onModeChange={handleCreatorModeChange}
-          />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Creator Mode Toggle - Minimal */}
+        <div className="flex justify-center mb-8">
+          <div className="glass-card rounded-full p-1">
+            <CreatorModeToggle
+              currentMode={creatorMode}
+              onModeChange={handleCreatorModeChange}
+            />
+          </div>
         </div>
 
         {isLoading ? (
@@ -297,122 +279,136 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
             {/* Left Column - Session Management */}
-            <div className="space-y-6">
+            <div className="xl:col-span-4 space-y-6 animate-fade-in-up">
               {/* Session Builder */}
               {session && (
-                <SessionBuilder
-                  session={session as SessionData}
-                  onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
-                />
+                <div className="card-minimal">
+                  <SessionBuilder
+                    session={session as SessionData}
+                    onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
+                  />
+                </div>
               )}
 
               {/* Linked Scenarios Quick Access */}
               {session && (
-                <LinkedScenariosPanel sessionId={session.id} />
+                <div className="card-minimal">
+                  <LinkedScenariosPanel sessionId={session.id} />
+                </div>
               )}
 
               {/* Session Notes & Progress */}
               {session && (
-                <SessionNotes
-                  sessionId={session.id}
-                  scenarioId={undefined}
-                  players={['Player 1', 'Player 2', 'Player 3']} // TODO: Get from actual player management
-                />
-              )}
-
-              {/* Timeline Manager */}
-              {session && (
-                <TimelineManager
-                  sessionId={session.id}
-                  currentPhase={session.currentPhase}
-                  onPhaseChange={(phase) => updateSessionMutation.mutate({ currentPhase: phase })}
-                />
+                <div className="card-minimal">
+                  <SessionNotes
+                    sessionId={session.id}
+                    scenarioId={undefined}
+                    players={['Player 1', 'Player 2', 'Player 3']}
+                  />
+                </div>
               )}
             </div>
 
             {/* Center Column - Node Graph */}
-            <div className="xl:col-span-1">
+            <div className="xl:col-span-5 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
               {currentSessionId && (
-                <NodeGraph
-                  sessionId={currentSessionId}
-                  nodes={nodes as NodeData[]}
-                  connections={connections as ConnectionData[]}
-                />
+                <div className="card-minimal h-[800px]">
+                  <NodeGraph
+                    sessionId={currentSessionId}
+                    nodes={nodes as NodeData[]}
+                    connections={connections as ConnectionData[]}
+                  />
+                </div>
               )}
             </div>
 
             {/* Right Column - AI Tools & Controls */}
-            <div className="space-y-6">
+            <div className="xl:col-span-3 space-y-6 animate-slide-in-right">
               {/* Session Tracker */}
               {session && (
-                <SessionTracker
-                  sessionId={session.id}
-                  scenarioId={undefined}
-                  players={['Player 1', 'Player 2', 'Player 3']} // TODO: Get from actual player management
-                />
+                <div className="card-compact">
+                  <SessionTracker
+                    sessionId={session.id}
+                    scenarioId={undefined}
+                    players={['Player 1', 'Player 2', 'Player 3']}
+                  />
+                </div>
               )}
 
               {/* Session-Scenario Linker */}
-              <SessionScenarioLinker
-                currentSessionId={session?.id}
-                onLinkedScenariosUpdate={(scenarios) => {
-                  console.log('Linked scenarios updated:', scenarios);
-                }}
-              />
-
-              {/* Creator Mode Toggle */}
-              <CreatorModeToggle
-                currentMode={creatorMode}
-                onModeChange={handleCreatorModeChange}
-              />
+              <div className="card-compact">
+                <SessionScenarioLinker
+                  currentSessionId={session?.id}
+                  onLinkedScenariosUpdate={(scenarios) => {
+                    console.log('Linked scenarios updated:', scenarios);
+                  }}
+                />
+              </div>
 
               {/* Creator-Specific Controls */}
-              <CreatorSpecificControls
-                session={session}
-                onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
-              />
+              <div className="card-compact">
+                <CreatorSpecificControls
+                  session={session}
+                  onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
+                />
+              </div>
+
+              {/* Timeline Manager */}
+              {session && (
+                <div className="card-compact">
+                  <TimelineManager
+                    sessionId={session.id}
+                    currentPhase={session.currentPhase}
+                    onPhaseChange={(phase) => updateSessionMutation.mutate({ currentPhase: phase })}
+                  />
+                </div>
+              )}
 
               {/* Pacing Controls */}
-              <PacingControls
-                sessionId={currentSessionId}
-                creatorMode={creatorMode}
-              />
+              <div className="card-compact">
+                <PacingControls
+                  sessionId={currentSessionId}
+                  creatorMode={creatorMode}
+                />
+              </div>
 
               {/* AI Event Generator */}
-              <AiEventGenerator
-                sessionId={currentSessionId}
-                creatorMode={creatorMode}
-                aiMode={(session?.aiMode as AiMode) || 'continuity'}
-                nodes={nodes as NodeData[]}
-                timelineEvents={timelineEvents as TimelineEventData[]}
-              />
+              <div className="card-compact">
+                <AiEventGenerator
+                  sessionId={currentSessionId}
+                  creatorMode={creatorMode}
+                  aiMode={(session?.aiMode as AiMode) || 'continuity'}
+                  nodes={nodes as NodeData[]}
+                  timelineEvents={timelineEvents as TimelineEventData[]}
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Floating Action Menu */}
-      <div className="fixed bottom-6 right-6 flex flex-col space-y-3">
+      {/* Floating Action Menu - Minimalist */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-3">
         <Button
-          className="industrial-button w-12 h-12 rounded-full flex items-center justify-center rust-glow"
+          className="fab w-12 h-12 rounded-full shadow-2xl"
           data-testid="button-quick-save"
         >
-          <Save className="text-rust-400 h-5 w-5" />
+          <Save className="h-5 w-5 text-white" />
         </Button>
         <Button
-          className="industrial-button w-12 h-12 rounded-full flex items-center justify-center"
+          className="glass-card w-10 h-10 rounded-full hover:bg-muted/20 border-0"
           data-testid="button-undo"
         >
-          <Undo className="text-gray-400 h-5 w-5" />
+          <Undo className="h-4 w-4 text-muted-foreground" />
         </Button>
         <Button
-          className="industrial-button w-12 h-12 rounded-full flex items-center justify-center"
+          className="glass-card w-10 h-10 rounded-full hover:bg-muted/20 border-0"
           data-testid="button-help"
         >
-          <HelpCircle className="text-gray-400 h-5 w-5" />
+          <HelpCircle className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
     </div>

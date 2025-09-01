@@ -213,44 +213,44 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <Navigation className="h-5 w-5 text-green-400" />
+    <div className="space-y-6">
+      <div>
+        <h2 className="heading-minimal flex items-center gap-3">
+          <Navigation className="h-5 w-5 text-toxic" />
           Session Tracker
-        </CardTitle>
-        <CardDescription className="text-slate-300">
+        </h2>
+        <p className="text-minimal mt-1">
           Monitor session progress, player status, and scenario position
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </p>
+      </div>
+      
+      <div className="space-y-6">
         {/* Session Controls */}
-        <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={isSessionActive ? pauseSession : startSession}
-              className={isSessionActive ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}
-            >
-              {isSessionActive ? (
-                <>
+        <div className="glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={isSessionActive ? pauseSession : startSession}
+                className={isSessionActive ? "bg-orange-500 hover:bg-orange-600 border-0" : "btn-rust"}
+                size="sm"
+              >
+                {isSessionActive ? (
                   <Pause className="h-4 w-4 mr-2" />
-                  Pause Session
-                </>
-              ) : (
-                <>
+                ) : (
                   <Play className="h-4 w-4 mr-2" />
-                  Start Session
-                </>
-              )}
-            </Button>
-            <div className="flex items-center gap-2 text-white">
-              <Clock className="h-4 w-4" />
-              <span className="font-mono text-lg">{formatDuration(sessionDuration)}</span>
+                )}
+                {isSessionActive ? "Pause" : "Start"}
+              </Button>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="font-mono text-sm">{formatDuration(sessionDuration)}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`status-dot ${isSessionActive ? 'status-active' : 'status-warning'}`}></div>
+              <span className="text-xs font-medium">{isSessionActive ? "Live" : "Paused"}</span>
             </div>
           </div>
-          <Badge variant={isSessionActive ? "default" : "secondary"}>
-            {isSessionActive ? "Active" : "Paused"}
-          </Badge>
         </div>
 
         {/* Scenario Position */}
@@ -279,25 +279,23 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-slate-300">Scenario Progress</label>
-              <span className="text-sm text-white">{scenarioPosition.progress}%</span>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-foreground">Scenario Progress</label>
+              <span className="text-sm font-mono text-rust">{scenarioPosition.progress}%</span>
             </div>
-            <Progress value={scenarioPosition.progress} className="h-2" />
-            <div className="flex gap-2 mt-2">
+            <Progress value={scenarioPosition.progress} className="h-1.5 bg-muted" />
+            <div className="flex gap-2 mt-3">
               <Button
                 onClick={() => updateProgress(scenarioPosition.progress - 10)}
                 size="sm"
-                variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="btn-ghost px-3"
               >
                 -10%
               </Button>
               <Button
                 onClick={() => updateProgress(scenarioPosition.progress + 10)}
                 size="sm"
-                variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="btn-ghost px-3"
               >
                 +10%
               </Button>

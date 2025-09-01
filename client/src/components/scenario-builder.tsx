@@ -898,37 +898,37 @@ export function ScenarioBuilder() {
   }, [regions, currentScenario]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Minimalist Header */}
+        <div className="header-minimal rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                Scenario Builder
+              <h1 className="text-3xl font-light tracking-wide mb-2">
+                <span className="bg-gradient-to-r from-rust to-brass bg-clip-text text-transparent">
+                  Scenario Builder
+                </span>
               </h1>
-              <p className="text-slate-400 text-lg">
+              <p className="text-minimal">
                 Create immersive worlds with interactive scenarios, cities, and regions
               </p>
             </div>
 
-            {/* Advanced Toolbar */}
-            <div className="flex items-center gap-3">
+            {/* Clean Toolbar */}
+            <div className="flex items-center gap-2">
               <Button
-                size="sm"
-                variant="outline"
                 onClick={() => window.location.href = '/'}
-                className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                className="btn-ghost"
+                size="sm"
               >
                 <MapPin className="h-4 w-4 mr-2" />
                 Back to Session
               </Button>
 
               <Button
-                size="sm"
-                variant="outline"
                 onClick={() => setShowTemplateSelector(true)}
-                className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
+                className="btn-ghost"
+                size="sm"
               >
                 <Globe className="h-4 w-4 mr-2" />
                 Templates
