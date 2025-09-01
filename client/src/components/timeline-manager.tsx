@@ -32,7 +32,7 @@ export function TimelineManager({ sessionId, events }: TimelineManagerProps) {
       const response = await apiRequest('POST', '/api/timeline-events', {
         sessionId,
         ...eventData,
-        orderIndex: events.length,
+        orderIndex: events?.length || 0,
         isCompleted: 'false'
       });
       return response.json();
@@ -157,7 +157,7 @@ export function TimelineManager({ sessionId, events }: TimelineManagerProps) {
           onClick={exportTimeline}
           size="sm"
           className="industrial-button"
-          disabled={events.length === 0}
+          disabled={!events || events.length === 0}
           data-testid="button-export-timeline"
         >
           <Download className="h-4 w-4" />
@@ -166,14 +166,14 @@ export function TimelineManager({ sessionId, events }: TimelineManagerProps) {
       
       {/* Timeline Events */}
       <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin">
-        {events.length === 0 ? (
+        {!events || events.length === 0 ? (
           <div className="text-center text-gray-400 py-8">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No timeline events yet.</p>
             <p className="text-sm">Generate or create events to build your session timeline.</p>
           </div>
         ) : (
-          events.map((event, index) => (
+          events?.map((event, index) => (
             <div 
               key={event.id}
               className={`flex items-start space-x-3 p-3 bg-steel-700 rounded-lg border-l-4 ${getPhaseColor(event.phase)} ${

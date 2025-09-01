@@ -400,16 +400,9 @@ export function ScenarioBuilder() {
       const data = await response.json();
       setRegions(data);
 
-      // Auto-generate regions if none exist
+      // Log if no regions are found (default regions should be available from server)
       if (data.length === 0) {
-        console.log('No regions found, generating default regions based on lore...');
-        await generateDefaultRegions(scenarioId);
-        // Fetch regions again to display the newly created ones
-        const newResponse = await fetch(`/api/scenarios/${scenarioId}/regions`);
-        if (newResponse.ok) {
-          const newData = await newResponse.json();
-          setRegions(newData);
-        }
+        console.log('No regions found for scenario:', scenarioId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch regions');
@@ -2735,7 +2728,7 @@ export function ScenarioBuilder() {
                         description: editingCondition?.description ?? conditionForm.description,
                         severity: (editingCondition?.severity ?? conditionForm.severity) as 'mild' | 'moderate' | 'severe' | 'extreme',
                         affectedRegions: editingCondition?.affectedRegions ?? conditionForm.affectedRegions,
-                        duration: editingCondition?.duration ?? conditionForm.duration || null,
+                        duration: (editingCondition?.duration ?? conditionForm.duration) || null,
                         createdAt: new Date()
                       };
 
