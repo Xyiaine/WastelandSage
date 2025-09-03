@@ -115,7 +115,7 @@ export function MapEditor({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isAddingCity, setIsAddingCity] = useState(false);
   const [showCityForm, setShowCityForm] = useState(false);
-  const [mapDimensions, setMapDimensions] = useState({ width: 800, height: 600 });
+  const [mapDimensions, setMapDimensions] = useState({ width: 800, height: 500 });
 
   // Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -432,9 +432,55 @@ export function MapEditor({
       };
       img.src = mapState.mapImage;
     } else {
-      // Draw default background
-      ctx.fillStyle = '#1e293b';
+      // Draw Mediterranean Sea background
+      ctx.fillStyle = '#1e3a8a'; // Deep blue base
       ctx.fillRect(0, 0, mapDimensions.width, mapDimensions.height);
+      
+      // Add Mediterranean coastlines
+      ctx.fillStyle = '#065f46'; // Dark green for land
+      ctx.beginPath();
+      // North Africa coastline
+      ctx.moveTo(0, mapDimensions.height * 0.7);
+      ctx.bezierCurveTo(
+        mapDimensions.width * 0.3, mapDimensions.height * 0.6,
+        mapDimensions.width * 0.7, mapDimensions.height * 0.8,
+        mapDimensions.width, mapDimensions.height * 0.75
+      );
+      ctx.lineTo(mapDimensions.width, mapDimensions.height);
+      ctx.lineTo(0, mapDimensions.height);
+      ctx.closePath();
+      ctx.fill();
+      
+      // European coastline
+      ctx.beginPath();
+      ctx.moveTo(0, mapDimensions.height * 0.3);
+      ctx.bezierCurveTo(
+        mapDimensions.width * 0.2, mapDimensions.height * 0.2,
+        mapDimensions.width * 0.8, mapDimensions.height * 0.4,
+        mapDimensions.width, mapDimensions.height * 0.3
+      );
+      ctx.lineTo(mapDimensions.width, 0);
+      ctx.lineTo(0, 0);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Islands
+      ctx.fillStyle = '#059669'; // Slightly lighter green for islands
+      // Sicily
+      ctx.beginPath();
+      ctx.arc(mapDimensions.width * 0.6, mapDimensions.height * 0.65, 15, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Sardinia
+      ctx.beginPath();
+      ctx.arc(mapDimensions.width * 0.45, mapDimensions.height * 0.55, 12, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Cyprus
+      ctx.beginPath();
+      ctx.arc(mapDimensions.width * 0.85, mapDimensions.height * 0.6, 8, 0, 2 * Math.PI);
+      ctx.fill();
+      
       renderCitiesAndGrid();
     }
 
@@ -677,7 +723,7 @@ export function MapEditor({
           <canvas
             ref={mapCanvasRef}
             width={800}
-            height={600}
+            height={500}
             className="w-full h-full cursor-crosshair"
             onClick={handleMapClick}
             onMouseMove={handleMouseMove}

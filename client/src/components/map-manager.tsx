@@ -50,26 +50,48 @@ export function MapManager({
   const [mapCities, setMapCities] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
 
-  // Convert regions to map cities format
+  // Convert regions to map cities format with Mediterranean positioning
   const convertRegionsToMapCities = useCallback((regions: Region[]) => {
-    return regions.map(region => ({
-      id: region.id,
-      name: region.name,
-      x: Math.random() * 600 + 100, // Random placement for now
-      y: Math.random() * 400 + 100,
-      type: region.type,
-      population: region.population || 0,
-      controllingFaction: region.controllingFaction || '',
-      resources: region.resources || [],
-      threatLevel: region.threatLevel,
-      politicalStance: region.politicalStance || 'neutral',
-      description: region.description || '',
-      metadata: {
-        scenarioId: region.scenarioId,
-        tradeRoutes: region.tradeRoutes,
-        createdAt: region.createdAt
-      }
-    }));
+    // Mediterranean city positions based on real geography
+    const cityPositions: { [key: string]: { x: number; y: number } } = {
+      'Cité Médicale': { x: 200, y: 300 }, // Southern France area
+      'Cité du Carburant': { x: 350, y: 250 }, // Central Italy area
+      'Cité Industrielle': { x: 450, y: 200 }, // Northern Italy area
+      'Cité de l\'Eau & Alimentation': { x: 150, y: 250 }, // Eastern Spain area
+      'Cité du Divertissement': { x: 550, y: 350 }, // Sicily area
+      'Nuke City': { x: 100, y: 150 }, // Northeastern Spain area
+      'Cité des Métaux & Recyclage': { x: 300, y: 400 }, // North Africa area
+      'Cité de l\'Armement & Défense': { x: 600, y: 250 }, // Greece area
+      'L\'Île des Anciens': { x: 700, y: 350 }, // Cyprus area
+      'Bunker Oméga': { x: 400, y: 150 }, // Alpine region
+    };
+
+    return regions.map((region, index) => {
+      const position = cityPositions[region.name] || {
+        // Fallback to circular distribution for unknown cities
+        x: 400 + 200 * Math.cos((index * 2 * Math.PI) / regions.length),
+        y: 300 + 150 * Math.sin((index * 2 * Math.PI) / regions.length)
+      };
+
+      return {
+        id: region.id,
+        name: region.name,
+        x: position.x,
+        y: position.y,
+        type: region.type,
+        population: region.population || 0,
+        controllingFaction: region.controllingFaction || '',
+        resources: region.resources || [],
+        threatLevel: region.threatLevel,
+        politicalStance: region.politicalStance || 'neutral',
+        description: region.description || '',
+        metadata: {
+          scenarioId: region.scenarioId,
+          tradeRoutes: region.tradeRoutes,
+          createdAt: region.createdAt
+        }
+      };
+    });
   }, []);
 
   // Convert map cities back to regions format

@@ -899,6 +899,17 @@ const ScenarioBuilder: React.FC = React.memo(() => {
     }
   }, [regions, currentScenario]);
 
+  // Mock Toast and Load functions for API calls
+  const setToast = (toastInfo: { title: string; description?: string; variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined; }) => {
+    console.log("Toast:", toastInfo);
+  };
+  const loadRegions = async () => {
+    if (currentScenario) {
+      await fetchRegions(currentScenario.id);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -1122,7 +1133,7 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-9 bg-slate-700">
                       <TabsTrigger value="overview" className="text-white">{t('tabs.overview')}</TabsTrigger>
                       <TabsTrigger value="regions" className="text-white">{t('tabs.regions')} ({regions.length})</TabsTrigger>
@@ -1300,7 +1311,7 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                                   face internal rebellion. Armed convoys reported near water facilities.
                                 </p>
                               </div>
-                              
+
                               <div className="p-3 bg-orange-900/20 border-l-4 border-orange-500 rounded">
                                 <h5 className="font-semibold text-orange-300 mb-1">Nuclear Ultimatum</h5>
                                 <p className="text-sm text-orange-200">
@@ -1429,15 +1440,8 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                         <MapManager 
                           currentScenario={currentScenario}
                           regions={regions}
-                          onRegionUpdate={(regionId) => {
-                            // Optionally refresh region data when updated
-                            if (currentScenario) {
-                              fetchScenarioData(currentScenario.id);
-                            }
-                          }}
-                          onRegionsChange={(newRegions) => {
-                            setRegions(newRegions);
-                          }}
+                          onRegionUpdate={handleRegionUpdate}
+                          onRegionsChange={handleRegionsChange}
                         />
                       </div>
                     </TabsContent>
