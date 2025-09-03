@@ -26,7 +26,7 @@ import { Slider } from './ui/slider';
 import { 
   Upload, Download, Save, Undo2, Redo2, Grid3x3, ZoomIn, ZoomOut,
   Move, Plus, Trash2, Edit, Settings, MapPin, Users, Crown,
-  AlertCircle, Check, X, RotateCcw, Image as ImageIcon
+  AlertCircle, Check, X, RotateCcw, Image as ImageIcon, Maximize2, Minimize2
 } from 'lucide-react';
 
 // Types for the map system
@@ -116,6 +116,7 @@ export function MapEditor({
   const [isAddingCity, setIsAddingCity] = useState(false);
   const [showCityForm, setShowCityForm] = useState(false);
   const [mapDimensions, setMapDimensions] = useState({ width: 800, height: 500 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -134,6 +135,15 @@ export function MapEditor({
     politicalStance: 'neutral',
     description: ''
   });
+
+  // Update map dimensions based on fullscreen state
+  useEffect(() => {
+    if (isFullscreen) {
+      setMapDimensions({ width: 1920, height: 1080 });
+    } else {
+      setMapDimensions({ width: 800, height: 500 });
+    }
+  }, [isFullscreen]);
 
   // Memoized calculations
   const canUndo = historyIndex > 0;
@@ -612,14 +622,28 @@ export function MapEditor({
       if (event.key === 'Delete' && selectedCity && !readOnly) {
         deleteCity(selectedCity.id);
       }
+
+      if (event.key === 'F11' || (event.key === 'f' && (event.ctrlKey || event.metaKey))) {
+        event.preventDefault();
+        setIsFullscreen(prev => !prev);
+      }
+
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, saveMapState, selectedCity, deleteCity, readOnly]);
+  }, [undo, redo, saveMapState, selectedCity, deleteCity, readOnly, isFullscreen]);
 
   return (
-    <div className="w-full h-full bg-slate-900 rounded-lg overflow-hidden">
+    <div className={`
+      ${isFullscreen 
+        ? 'fixed inset-0 z-50 bg-slate-900' 
+        : 'w-full h-full bg-slate-900 rounded-lg overflow-hidden'
+      }
+    `}>
       <div className="flex h-full">
         {/* Map Canvas Area */}
         <div className="flex-1 relative bg-slate-800">
@@ -717,13 +741,25 @@ export function MapEditor({
             >
               <Save className="h-4 w-4" />
             </Button>
+
+            <div className="w-px h-6 bg-slate-600" />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="text-slate-300 hover:text-white"
+              title={isFullscreen ? "Exit Fullscreen (F11/Esc)" : "Fullscreen (F11)"}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
           </div>
 
           {/* Map Canvas */}
           <canvas
             ref={mapCanvasRef}
-            width={800}
-            height={500}
+            width={isFullscreen ? 1920 : 800}
+            height={isFullscreen ? 1080 : 500}
             className="w-full h-full cursor-crosshair"
             onClick={handleMapClick}
             onMouseMove={handleMouseMove}
@@ -745,8 +781,151 @@ export function MapEditor({
               {isAddingCity && (
                 <span className="text-orange-400">Click to place city</span>
               )}
+              {isFullscreen && (
+                <span className="text-blue-400">Fullscreen Mode</span>
+              )}
             </div>
           </div>
+
+          {/* Fullscreen City Quick Info */}
+          {isFullscreen && selectedCity && (
+            <div className="absolute top-20 right-4 w-72 bg-slate-800/95 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-white font-medium flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-orange-400" />
+                  {selectedCity.name}
+                </h4>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingCity(selectedCity);
+                      setCityForm(selectedCity);
+                      setShowCityForm(true);
+                    }}
+                    disabled={readOnly}
+                    className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedCity(null)}
+                    className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Type:</span>
+                  <div className="flex items-center gap-1">
+                    <span>{CITY_TYPES.find(t => t.value === selectedCity.type)?.icon}</span>
+                    <span className="text-white capitalize">{selectedCity.type.replace('_', ' ')}</span>
+                  </div>
+                </div>
+                
+                {selectedCity.population && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Population:</span>
+                    <span className="text-white">{selectedCity.population.toLocaleString()}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Threat Level:</span>
+                  <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${
+                      selectedCity.threatLevel > 3 ? 'bg-red-400' : 
+                      selectedCity.threatLevel > 1 ? 'bg-yellow-400' : 'bg-green-400'
+                    }`} />
+                    <span className="text-white">{selectedCity.threatLevel}/5</span>
+                  </div>
+                </div>
+
+                {selectedCity.politicalStance && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Stance:</span>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        selectedCity.politicalStance === 'hostile' ? 'text-red-300 border-red-400' :
+                        selectedCity.politicalStance === 'friendly' ? 'text-green-300 border-green-400' :
+                        selectedCity.politicalStance === 'allied' ? 'text-blue-300 border-blue-400' :
+                        'text-gray-300 border-gray-400'
+                      }`}
+                    >
+                      {selectedCity.politicalStance}
+                    </Badge>
+                  </div>
+                )}
+
+                {selectedCity.controllingFaction && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Faction:</span>
+                    <span className="text-white text-xs flex items-center gap-1">
+                      <Crown className="h-3 w-3 text-yellow-400" />
+                      {selectedCity.controllingFaction}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Fullscreen City List */}
+          {isFullscreen && (
+            <div className="absolute top-20 left-4 w-64 max-h-96 bg-slate-800/95 backdrop-blur-sm rounded-lg border border-slate-600 overflow-hidden">
+              <div className="p-3 border-b border-slate-600">
+                <h4 className="text-white font-medium text-sm">Cities ({mapState.cities.length})</h4>
+              </div>
+              <ScrollArea className="max-h-80">
+                <div className="p-2 space-y-1">
+                  {mapState.cities.map((city) => (
+                    <div
+                      key={city.id}
+                      className={`p-2 rounded cursor-pointer transition-colors text-sm ${
+                        selectedCity?.id === city.id
+                          ? 'bg-orange-500/20 border border-orange-500/50'
+                          : 'bg-slate-600/50 hover:bg-slate-600'
+                      }`}
+                      onClick={() => setSelectedCity(city)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">
+                            {CITY_TYPES.find(t => t.value === city.type)?.icon}
+                          </span>
+                          <span className="text-white font-medium">
+                            {city.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {city.threatLevel > 3 && (
+                            <AlertCircle className="h-3 w-3 text-red-400" />
+                          )}
+                          <span className="text-xs text-slate-400">
+                            {city.population ? `${(city.population / 1000).toFixed(0)}k` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {mapState.cities.length === 0 && (
+                    <div className="text-center py-4 text-slate-400">
+                      <MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No cities on the map</p>
+                      <p className="text-xs">Click the + button to add cities</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
 
           {/* Hidden file inputs */}
           <input
@@ -759,7 +938,8 @@ export function MapEditor({
         </div>
 
         {/* Right Panel - City Information & Controls */}
-        <div className="w-80 bg-slate-800 border-l border-slate-700 overflow-hidden">
+        {!isFullscreen && (
+          <div className="w-80 bg-slate-800 border-l border-slate-700 overflow-hidden">
           <div className="h-full flex flex-col">
             {/* Panel Header */}
             <div className="p-4 border-b border-slate-700">
@@ -993,6 +1173,7 @@ export function MapEditor({
             </ScrollArea>
           </div>
         </div>
+        )}
       </div>
 
       {/* City Edit Modal */}

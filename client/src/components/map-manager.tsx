@@ -15,7 +15,7 @@ import { MapEditor } from './map-editor';
 import { MediterraneanMap } from './mediterranean-map';
 import { 
   Map, Globe, Settings, Import, Export, 
-  RotateCcw, Save, AlertCircle 
+  RotateCcw, Save, AlertCircle, Maximize2 
 } from 'lucide-react';
 
 interface Region {
@@ -49,6 +49,7 @@ export function MapManager({
   const [activeMapMode, setActiveMapMode] = useState<'legacy' | 'editor'>('editor');
   const [mapCities, setMapCities] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Convert regions to map cities format with Mediterranean positioning
   const convertRegionsToMapCities = useCallback((regions: Region[]) => {
@@ -158,11 +159,34 @@ export function MapManager({
     setSyncStatus('synced');
   }, [regions, convertRegionsToMapCities]);
 
+  // Keyboard shortcuts for fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F11' || (event.key === 'f' && (event.ctrlKey || event.metaKey))) {
+        event.preventDefault();
+        setIsFullscreen(prev => !prev);
+      }
+
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   return (
-    <div className="w-full h-full bg-slate-900 rounded-lg overflow-hidden">
+    <div className={`
+      ${isFullscreen 
+        ? 'fixed inset-0 z-50 bg-slate-900' 
+        : 'w-full h-full bg-slate-900 rounded-lg overflow-hidden'
+      }
+    `}>
       <div className="h-full flex flex-col">
         {/* Header with mode toggle and sync status */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+        {!isFullscreen && (
+          <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Map className="h-5 w-5 text-orange-400" />
@@ -223,8 +247,54 @@ export function MapManager({
             <Badge variant="outline" className="text-slate-300">
               {mapCities.length} locations
             </Badge>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="text-slate-300 hover:text-white"
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+        )}
+
+        {/* Fullscreen Mode Controls */}
+        {isFullscreen && (
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 border border-slate-600">
+            <Tabs value={activeMapMode} onValueChange={(value) => setActiveMapMode(value as any)}>
+              <TabsList className="bg-slate-700 h-8">
+                <TabsTrigger value="editor" className="text-white text-xs px-3">
+                  Editor
+                </TabsTrigger>
+                <TabsTrigger value="legacy" className="text-white text-xs px-3">
+                  Legacy
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                syncStatus === 'synced' ? 'bg-green-400' :
+                syncStatus === 'pending' ? 'bg-yellow-400 animate-pulse' :
+                'bg-red-400'
+              }`} />
+              <span className="text-xs text-slate-300">{mapCities.length} locations</span>
+            </div>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsFullscreen(false)}
+              className="text-slate-300 hover:text-white"
+              title="Exit Fullscreen (ESC)"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {/* Map Content */}
         <div className="flex-1 overflow-hidden">
@@ -247,7 +317,8 @@ export function MapManager({
         </div>
 
         {/* Status Bar */}
-        <div className="p-2 border-t border-slate-700 bg-slate-800/50">
+        {!isFullscreen && (
+          <div className="p-2 border-t border-slate-700 bg-slate-800/50">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>
               Mode: {activeMapMode === 'editor' ? 'Advanced Editor' : 'Legacy View'}
@@ -271,6 +342,7 @@ export function MapManager({
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
