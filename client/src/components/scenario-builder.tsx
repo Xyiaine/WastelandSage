@@ -2938,4 +2938,8 @@ const ScenarioBuilder: React.FC = React.memo(() => {
       </div>
     </div>
   );
-}
+});
+
+ScenarioBuilder.displayName = 'ScenarioBuilder';
+
+export default ScenarioBuilder;

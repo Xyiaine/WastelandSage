@@ -14,7 +14,7 @@ import { CreatorSpecificControls } from "@/components/creator-specific-controls"
 import { NPCGenerator } from "@/components/npc-generator";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
-import { Skull, Download, Save, Undo, HelpCircle, MapPin, Link as LinkIcon } from "lucide-react";
+import { Skull, Download, Save, Undo, HelpCircle, MapPin, Link as LinkIcon, Brain, FileText, Gauge } from "lucide-react";
 import { Link } from "wouter";
 import type { CreatorMode, AiMode, SessionData, NodeData, ConnectionData, TimelineEventData } from "@/lib/types";
 import type { Session, Node, Connection, TimelineEvent } from "@shared/schema";
@@ -22,6 +22,9 @@ import { SessionScenarioLinker } from "@/components/session-scenario-linker";
 import { LinkedScenariosPanel } from "@/components/linked-scenarios-panel";
 import { SessionNotes } from "@/components/session-notes";
 import { SessionTracker } from "@/components/session-tracker";
+import AdvancedSearch from "@/components/advanced-search";
+import SessionRecorder from "@/components/session-recorder";
+import ThreatAssessment from "@/components/threat-assessment";
 
 export default function Dashboard() {
   const { sessionId } = useParams();
@@ -30,6 +33,9 @@ export default function Dashboard() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(sessionId || null);
   const [creatorMode, setCreatorMode] = useState<CreatorMode>('road');
   const [sessionDuration, setSessionDuration] = useState(0);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showSessionRecorder, setShowSessionRecorder] = useState(false);
+  const [showThreatAssessment, setShowThreatAssessment] = useState(false);
 
   // Create new session if none exists
   const createSessionMutation = useMutation({
@@ -223,6 +229,36 @@ export default function Dashboard() {
               </Link>
 
               <Button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                variant="ghost"
+                size="sm"
+                className={`btn-ghost ${showAdvancedSearch ? 'bg-purple-500/20' : ''}`}
+                data-testid="button-advanced-search"
+              >
+                <Brain className="h-4 w-4" />
+              </Button>
+
+              <Button
+                onClick={() => setShowSessionRecorder(!showSessionRecorder)}
+                variant="ghost"
+                size="sm"
+                className={`btn-ghost ${showSessionRecorder ? 'bg-green-500/20' : ''}`}
+                data-testid="button-session-recorder"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+
+              <Button
+                onClick={() => setShowThreatAssessment(!showThreatAssessment)}
+                variant="ghost"
+                size="sm"
+                className={`btn-ghost ${showThreatAssessment ? 'bg-orange-500/20' : ''}`}
+                data-testid="button-threat-assessment"
+              >
+                <Gauge className="h-4 w-4" />
+              </Button>
+
+              <Button
                 onClick={handleExportSession}
                 variant="ghost"
                 size="sm"
@@ -293,15 +329,30 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Advanced Search - Show when toggled */}
+              {showAdvancedSearch && (
+                <div className="card-minimal">
+                  <AdvancedSearch
+                    currentContext={{
+                      sessionId: session?.id,
+                      creatorMode: creatorMode
+                    }}
+                    onResultSelect={(result) => {
+                      console.log('Selected search result:', result);
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Linked Scenarios Quick Access */}
-              {session && (
+              {session && !showAdvancedSearch && (
                 <div className="card-minimal">
                   <LinkedScenariosPanel sessionId={session.id} />
                 </div>
               )}
 
               {/* Session Notes & Progress */}
-              {session && (
+              {session && !showAdvancedSearch && (
                 <div className="card-minimal">
                   <SessionNotes
                     sessionId={session.id}
@@ -327,8 +378,35 @@ export default function Dashboard() {
 
             {/* Right Column - AI Tools & Controls */}
             <div className="xl:col-span-3 space-y-6 animate-slide-in-right">
+              {/* Session Recorder - Show when toggled */}
+              {showSessionRecorder && session && (
+                <div className="card-compact">
+                  <SessionRecorder
+                    sessionId={session.id}
+                    onRecordingStart={() => {
+                      console.log('Recording started');
+                    }}
+                    onRecordingStop={(recording) => {
+                      console.log('Recording stopped:', recording);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Threat Assessment - Show when toggled */}
+              {showThreatAssessment && session && (
+                <div className="card-compact">
+                  <ThreatAssessment
+                    sessionId={session.id}
+                    onThreatChange={(level, factors) => {
+                      console.log('Threat level changed:', level, factors);
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Session Tracker */}
-              {session && (
+              {session && !showSessionRecorder && !showThreatAssessment && (
                 <div className="card-compact">
                   <SessionTracker
                     sessionId={session.id}
@@ -339,25 +417,29 @@ export default function Dashboard() {
               )}
 
               {/* Session-Scenario Linker */}
-              <div className="card-compact">
-                <SessionScenarioLinker
-                  currentSessionId={session?.id}
-                  onLinkedScenariosUpdate={(scenarios) => {
-                    console.log('Linked scenarios updated:', scenarios);
-                  }}
-                />
-              </div>
+              {!showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <SessionScenarioLinker
+                    currentSessionId={session?.id}
+                    onLinkedScenariosUpdate={(scenarios) => {
+                      console.log('Linked scenarios updated:', scenarios);
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Creator-Specific Controls */}
-              <div className="card-compact">
-                <CreatorSpecificControls
-                  session={session}
-                  onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
-                />
-              </div>
+              {!showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <CreatorSpecificControls
+                    session={session}
+                    onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
+                  />
+                </div>
+              )}
 
               {/* Timeline Manager */}
-              {session && (
+              {session && !showSessionRecorder && !showThreatAssessment && (
                 <div className="card-compact">
                   <TimelineManager
                     sessionId={session.id}
@@ -367,23 +449,27 @@ export default function Dashboard() {
               )}
 
               {/* Pacing Controls */}
-              <div className="card-compact">
-                <PacingControls
-                  sessionId={currentSessionId}
-                  creatorMode={creatorMode}
-                />
-              </div>
+              {!showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <PacingControls
+                    sessionId={currentSessionId}
+                    creatorMode={creatorMode}
+                  />
+                </div>
+              )}
 
               {/* AI Event Generator */}
-              <div className="card-compact">
-                <AiEventGenerator
-                  sessionId={currentSessionId}
-                  creatorMode={creatorMode}
-                  aiMode={(session?.aiMode as AiMode) || 'continuity'}
-                  nodes={nodes as NodeData[]}
-                  timelineEvents={timelineEvents as TimelineEventData[]}
-                />
-              </div>
+              {!showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <AiEventGenerator
+                    sessionId={currentSessionId}
+                    creatorMode={creatorMode}
+                    aiMode={(session?.aiMode as AiMode) || 'continuity'}
+                    nodes={nodes as NodeData[]}
+                    timelineEvents={timelineEvents as TimelineEventData[]}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
