@@ -113,7 +113,7 @@ const CATEGORY_COLORS = {
   combat: 'bg-red-500',
   resource: 'bg-yellow-500',
   social: 'bg-blue-500',
-  economic: 'bg-orange-500
+  economic: 'bg-orange-500'
 };
 
 const SEVERITY_COLORS = {
