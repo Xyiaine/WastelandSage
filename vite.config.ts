@@ -4,8 +4,14 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
-  plugins: [
-    react(),
+  plugins: [react({
+    include: "**/*.{jsx,tsx}",
+    babel: {
+      parserOpts: {
+        plugins: ['decorators-legacy']
+      }
+    }
+  }),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
