@@ -14,8 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { MapEditor } from './map-editor';
 import { MediterraneanMap } from './mediterranean-map';
 import { 
-  Map, Globe, Settings, Import, Export, 
-  RotateCcw, Save, AlertCircle, Maximize2 
+  Map, Globe, Settings, Import, Download, 
+  RotateCcw, Save, AlertCircle, Maximize2, X 
 } from 'lucide-react';
 
 interface Region {

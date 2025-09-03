@@ -25,6 +25,10 @@ import { SessionTracker } from "@/components/session-tracker";
 import AdvancedSearch from "@/components/advanced-search";
 import SessionRecorder from "@/components/session-recorder";
 import ThreatAssessment from "@/components/threat-assessment";
+import { SessionProgressTracker } from "@/components/session-progress-tracker";
+import { DiceRoller } from "@/components/dice-roller";
+import { QuickReferencePanel } from "@/components/quick-reference-panel";
+import { NarrativeAIAssistant } from "@/components/narrative-ai-assistant";
 
 export default function Dashboard() {
   const { sessionId } = useParams();
@@ -329,18 +333,35 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Advanced Search - Show when toggled */}
+              {/* Enhanced GM Tools - Show when toggled */}
               {showAdvancedSearch && (
-                <div className="card-minimal">
-                  <AdvancedSearch
-                    currentContext={{
-                      sessionId: session?.id,
-                      creatorMode: creatorMode
-                    }}
-                    onResultSelect={(result) => {
-                      console.log('Selected search result:', result);
-                    }}
-                  />
+                <div className="space-y-4">
+                  <div className="card-minimal">
+                    <AdvancedSearch
+                      currentContext={{
+                        sessionId: session?.id,
+                        creatorMode: creatorMode
+                      }}
+                      onResultSelect={(result) => {
+                        console.log('Selected search result:', result);
+                      }}
+                    />
+                  </div>
+                  <div className="card-minimal">
+                    <SessionProgressTracker
+                      sessionId={session?.id}
+                      sessionMode={creatorMode}
+                      onPhaseChange={(phase) => {
+                        console.log('Phase changed:', phase);
+                      }}
+                      onSessionComplete={() => {
+                        toast({
+                          title: "Session Complete",
+                          description: "Great job running the session!",
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -376,20 +397,41 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Right Column - AI Tools & Controls */}
+            {/* Right Column - Enhanced GM Tools */}
             <div className="xl:col-span-3 space-y-6 animate-slide-in-right">
-              {/* Session Recorder - Show when toggled */}
+              {/* Enhanced GM Panel - Show when toggled */}
               {showSessionRecorder && session && (
-                <div className="card-compact">
-                  <SessionRecorder
-                    sessionId={session.id}
-                    onRecordingStart={() => {
-                      console.log('Recording started');
-                    }}
-                    onRecordingStop={(recording) => {
-                      console.log('Recording stopped:', recording);
-                    }}
-                  />
+                <div className="space-y-4">
+                  <div className="card-compact">
+                    <SessionRecorder
+                      sessionId={session.id}
+                      onRecordingStart={() => {
+                        console.log('Recording started');
+                      }}
+                      onRecordingStop={(recording) => {
+                        console.log('Recording stopped:', recording);
+                      }}
+                    />
+                  </div>
+                  <div className="card-compact">
+                    <DiceRoller
+                      onRollComplete={(roll) => {
+                        console.log('Dice rolled:', roll);
+                      }}
+                    />
+                  </div>
+                  <div className="card-compact">
+                    <QuickReferencePanel
+                      currentScenario={null}
+                      regions={[]}
+                      onNPCSelect={(npc) => {
+                        console.log('NPC selected:', npc);
+                      }}
+                      onRuleReference={(rule) => {
+                        console.log('Rule referenced:', rule);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -429,11 +471,11 @@ export default function Dashboard() {
               )}
 
               {/* Creator-Specific Controls */}
-              {!showSessionRecorder && !showThreatAssessment && (
+              {!showSessionRecorder && !showThreatAssessment && session && (
                 <div className="card-compact">
                   <CreatorSpecificControls
                     session={session}
-                    onSessionUpdate={(updates) => updateSessionMutation.mutate(updates)}
+                    onSessionUpdate={(updates: Partial<Session>) => updateSessionMutation.mutate(updates)}
                   />
                 </div>
               )}
@@ -449,7 +491,7 @@ export default function Dashboard() {
               )}
 
               {/* Pacing Controls */}
-              {!showSessionRecorder && !showThreatAssessment && (
+              {!showSessionRecorder && !showThreatAssessment && currentSessionId && (
                 <div className="card-compact">
                   <PacingControls
                     sessionId={currentSessionId}
@@ -459,7 +501,7 @@ export default function Dashboard() {
               )}
 
               {/* AI Event Generator */}
-              {!showSessionRecorder && !showThreatAssessment && (
+              {!showSessionRecorder && !showThreatAssessment && currentSessionId && (
                 <div className="card-compact">
                   <AiEventGenerator
                     sessionId={currentSessionId}
@@ -467,6 +509,25 @@ export default function Dashboard() {
                     aiMode={(session?.aiMode as AiMode) || 'continuity'}
                     nodes={nodes as NodeData[]}
                     timelineEvents={timelineEvents as TimelineEventData[]}
+                  />
+                </div>
+              )}
+
+              {/* Narrative AI Assistant */}
+              {!showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <NarrativeAIAssistant
+                    currentScenario={null}
+                    sessionMode={creatorMode}
+                    currentPhase="active"
+                    elapsedTime={sessionDuration + (session?.duration || 0)}
+                    regions={[]}
+                    onSuggestionImplement={(suggestion) => {
+                      toast({
+                        title: "Suggestion Implemented",
+                        description: `"${suggestion.title}" has been copied to your clipboard.`,
+                      });
+                    }}
                   />
                 </div>
               )}

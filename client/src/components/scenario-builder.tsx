@@ -658,6 +658,35 @@ const ScenarioBuilder: React.FC = React.memo(() => {
     }
   };
 
+  // Map event handlers for region updates
+  const handleRegionUpdate = async (regionId: string) => {
+    try {
+      // Re-fetch the specific region data to get latest updates
+      const response = await fetch(`/api/regions/${regionId}`);
+      if (!response.ok) throw new Error('Failed to fetch updated region');
+      const updatedRegion = await response.json();
+      
+      // Update the region in our state
+      setRegions(prev => prev.map(r => r.id === regionId ? updatedRegion : r));
+      
+      // Optionally refresh NPCs for this region if needed
+      await fetchRegionNPCs(regionId, updatedRegion.name);
+    } catch (err) {
+      console.error('Error handling region update:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update region');
+    }
+  };
+
+  const handleRegionsChange = (updatedRegions: Region[]) => {
+    // Update the regions state with the new data from map
+    setRegions(updatedRegions);
+    
+    // Optionally sync the changes to the backend if needed
+    // This could trigger a batch update API call if the map component
+    // allows bulk changes that need to be persisted
+    console.log('Regions updated from map:', updatedRegions.length);
+  };
+
   // Fetch all necessary data for the current scenario
   const fetchScenarioData = async (scenarioId: string) => {
     if (!scenarioId) return;
