@@ -82,19 +82,39 @@ interface MediterraneanMapProps {
   onRegionUpdate?: (regionId: string) => void;
 }
 
-// City positions on the Mediterranean map (approximate coordinates)
-const CITY_POSITIONS: CityPosition[] = [
-  { x: 25, y: 45, regionId: '550e8400-e29b-41d4-a716-446655440001' }, // Cité Médicale
-  { x: 35, y: 55, regionId: '550e8400-e29b-41d4-a716-446655440002' }, // Cité du Carburant
-  { x: 45, y: 40, regionId: '550e8400-e29b-41d4-a716-446655440003' }, // Cité Industrielle
-  { x: 30, y: 35, regionId: '550e8400-e29b-41d4-a716-446655440004' }, // Cité de l'Eau & Alimentation
-  { x: 55, y: 60, regionId: '550e8400-e29b-41d4-a716-446655440005' }, // Cité du Divertissement
-  { x: 20, y: 25, regionId: '550e8400-e29b-41d4-a716-446655440006' }, // Nuke City
-  { x: 40, y: 65, regionId: '550e8400-e29b-41d4-a716-446655440007' }, // Cité des Métaux & Recyclage
-  { x: 60, y: 40, regionId: '550e8400-e29b-41d4-a716-446655440008' }, // Cité de l'Armement & Défense
-  { x: 70, y: 50, regionId: '550e8400-e29b-41d4-a716-446655440009' }, // L'Île des Anciens
-  { x: 50, y: 30, regionId: '550e8400-e29b-41d4-a716-446655440010' }, // Bunker Oméga
-];
+// Generate city positions dynamically based on region names
+const generateCityPositions = (regions: Region[]): CityPosition[] => {
+  const positionMap: { [key: string]: { x: number; y: number } } = {
+    'Cité Médicale': { x: 25, y: 45 },
+    'Cité du Carburant': { x: 35, y: 55 },
+    'Cité Industrielle': { x: 45, y: 40 },
+    'Cité de l\'Eau & Alimentation': { x: 30, y: 35 },
+    'Cité du Divertissement': { x: 55, y: 60 },
+    'Nuke City': { x: 20, y: 25 },
+    'Cité des Métaux & Recyclage': { x: 40, y: 65 },
+    'Cité de l\'Armement & Défense': { x: 60, y: 40 },
+    'L\'Île des Anciens': { x: 70, y: 50 },
+    'Bunker Oméga': { x: 50, y: 30 },
+  };
+
+  // Create positions based on actual regions, with fallback positions for unknown cities
+  return regions.map((region, index) => {
+    const knownPosition = positionMap[region.name];
+    if (knownPosition) {
+      return { ...knownPosition, regionId: region.id };
+    }
+    // Generate fallback positions in a circle for unknown regions
+    const angle = (index * 2 * Math.PI) / regions.length;
+    const radius = 25;
+    const centerX = 50;
+    const centerY = 50;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+      regionId: region.id
+    };
+  });
+};
 
 const POLITICAL_STANCE_COLORS = {
   hostile: 'bg-red-500',
@@ -155,8 +175,11 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
     fetchCityData(region);
   };
 
+  // Generate city positions dynamically based on current regions
+  const cityPositions = React.useMemo(() => generateCityPositions(regions), [regions]);
+
   const getCityPosition = (regionId: string): CityPosition | undefined => {
-    return CITY_POSITIONS.find(pos => pos.regionId === regionId);
+    return cityPositions.find(pos => pos.regionId === regionId);
   };
 
   const getPoliticalStanceIcon = (stance: string | null) => {
@@ -203,7 +226,10 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
             {/* City Markers */}
             {regions.map((region) => {
               const position = getCityPosition(region.id);
-              if (!position) return null;
+              if (!position) {
+                console.warn(`No position found for region: ${region.name} (${region.id})`);
+                return null;
+              }
 
               const isSelected = selectedCity?.id === region.id;
               const stanceColor = region.politicalStance ? POLITICAL_STANCE_COLORS[region.politicalStance] : 'bg-gray-500';
@@ -212,40 +238,53 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
               return (
                 <div
                   key={region.id}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
-                    isSelected ? 'scale-125 z-20' : 'hover:scale-110 z-10'
+                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 group ${
+                    isSelected ? 'scale-125 z-20' : 'hover:scale-125 z-10'
                   }`}
                   style={{
                     left: `${position.x}%`,
                     top: `${position.y}%`
                   }}
-                  onClick={() => handleCityClick(region)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Clicked on city:', region.name);
+                    handleCityClick(region);
+                  }}
                 >
                   {/* City Marker */}
                   <div className="relative">
-                    {/* Threat Level Ring */}
-                    <div className={`w-8 h-8 rounded-full ${threatColor} opacity-60 absolute -inset-1 animate-pulse`} />
+                    {/* Threat Level Ring - More visible */}
+                    <div className={`w-12 h-12 rounded-full ${threatColor} opacity-40 absolute -inset-2 animate-pulse`} />
                     
-                    {/* Political Stance Marker */}
-                    <div className={`w-6 h-6 rounded-full ${stanceColor} border-2 border-white flex items-center justify-center text-white shadow-lg`}>
+                    {/* Political Stance Marker - Larger and more prominent */}
+                    <div className={`w-8 h-8 rounded-full ${stanceColor} border-3 border-white flex items-center justify-center text-white shadow-xl hover:shadow-2xl`}>
                       {getPoliticalStanceIcon(region.politicalStance)}
                     </div>
 
-                    {/* City Name Label */}
-                    <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 ${
-                      isSelected ? 'block' : 'hidden group-hover:block'
-                    }`}>
-                      <div className="bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg border border-slate-600">
-                        {region.name}
+                    {/* Always visible city name on hover */}
+                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="bg-slate-900 text-white text-sm px-3 py-1 rounded-lg whitespace-nowrap shadow-xl border border-slate-500">
+                        <div className="font-semibold">{region.name}</div>
+                        <div className="text-xs text-slate-300">{region.type.replace('_', ' ')}</div>
                       </div>
+                      {/* Arrow pointing to city */}
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45 border-l border-t border-slate-500"></div>
                     </div>
 
-                    {/* Crisis Indicator */}
+                    {/* Crisis Indicator - More prominent */}
                     {region.description?.includes('CRISIS') && (
-                      <div className="absolute -top-1 -right-1">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-ping" />
-                        <div className="absolute inset-0 w-3 h-3 bg-red-500 rounded-full" />
+                      <div className="absolute -top-1 -right-1 z-10">
+                        <div className="w-4 h-4 bg-red-500 rounded-full animate-ping" />
+                        <div className="absolute inset-0 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center">
+                          <AlertTriangle className="h-2 w-2 text-white" />
+                        </div>
                       </div>
+                    )}
+
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div className="absolute -inset-3 border-2 border-orange-400 rounded-full animate-pulse"></div>
                     )}
                   </div>
                 </div>
@@ -275,13 +314,34 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
               </div>
             </div>
 
-            {/* Instructions */}
+            {/* Instructions and Debug Info */}
             {!selectedCity && (
               <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 border border-slate-600">
-                <div className="flex items-center gap-2 text-slate-300 text-sm">
+                <div className="flex items-center gap-2 text-slate-300 text-sm mb-2">
                   <Info className="h-4 w-4" />
                   Click on any city to view detailed information
                 </div>
+                <div className="text-xs text-slate-400">
+                  Found {regions.length} cities on the map
+                </div>
+              </div>
+            )}
+
+            {/* Debug: Show all region positions */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="absolute top-20 left-4 bg-slate-800/80 p-2 rounded text-xs text-white max-w-xs">
+                <div className="font-semibold mb-1">Debug - City Positions:</div>
+                {regions.slice(0, 3).map((region) => {
+                  const pos = getCityPosition(region.id);
+                  return (
+                    <div key={region.id} className="text-slate-300">
+                      {region.name}: {pos ? `${pos.x}%, ${pos.y}%` : 'No position'}
+                    </div>
+                  );
+                })}
+                {regions.length > 3 && (
+                  <div className="text-slate-400">... and {regions.length - 3} more</div>
+                )}
               </div>
             )}
           </div>
