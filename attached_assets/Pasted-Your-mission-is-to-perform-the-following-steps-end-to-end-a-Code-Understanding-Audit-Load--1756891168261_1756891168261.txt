@@ -1,0 +1,97 @@
+Your mission is to perform the following steps end-to-end:
+
+a. Code Understanding & Audit
+
+Load the full codebase and dependencies.
+
+Analyze the app structure and logic thoroughly.
+
+Map out the components/modules and data flow.
+
+Identify unused, redundant, or dead code.
+
+b. Testing
+
+Review existing tests (unit, integration, E2E). Report coverage and quality.
+
+Write missing tests across backend and frontend.
+
+Ensure tests cover edge cases, error states, and user interactions.
+
+Set up or improve the automated test suite (e.g., Jest, Pytest, Cypress).
+
+Run the full test suite and report issues.
+
+c. Bug Identification and Fixing
+
+Locate runtime errors, broken features, security vulnerabilities, or unstable components.
+
+Fix all critical and non-critical bugs.
+
+Validate that all fixes are covered by tests.
+
+Check for security vulnerabilities (e.g., SQL injection, XSS, CSRF, etc.).
+
+d. Performance Optimization
+
+Optimize slow functions, loops, or inefficient DB queries.
+
+Minimize resource usage (memory, CPU, API calls).
+
+Ensure frontend bundle size is optimized and assets are cached efficiently.
+
+Improve UI responsiveness and time-to-interactive.
+
+Profile and optimize database indexes and query performance.
+
+e. Code Quality Improvements
+
+Refactor code for readability, reusability, and maintainability.
+
+Apply consistent code formatting, naming conventions, and patterns.
+
+Remove unused dependencies, imports, variables, and functions.
+
+Ensure modularity and separation of concerns.
+
+Improve comments and documentation throughout the code.
+
+f. Dependency & Configuration Check
+
+Audit third-party packages for vulnerabilities.
+
+Update outdated packages where safe to do so.
+
+Validate environment configurations (.env, dev/staging/prod).
+
+Confirm CI/CD setup is correct (if applicable).
+
+g. Output and Documentation
+
+Summarize all actions taken.
+
+Output a clear report that includes:
+
+Issues found and resolved
+
+Test coverage improvements
+
+Performance gains (before/after metrics if possible)
+
+Suggestions for future improvements
+
+Include inline comments where major changes were made.
+
+Update README and developer onboarding docs (if missing or outdated).
+
+
+
+⏱️ Constraints and Priorities
+
+Prioritize security, stability, and performance.
+
+Maintain backward compatibility where applicable.
+
+Ensure that the app runs correctly in both development and production environments.
+
+Deliver clear, human-readable output in markdown or plain text format.
