@@ -1,10 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { securityHeaders, generalApiLimit, sanitizeInput } from './middleware/security';
+import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Security Middleware
+app.use(cors()); // Enable CORS for all origins
+app.use(securityHeaders); // Set security-related HTTP headers
+app.use('/api', generalApiLimit); // Apply rate limiting to API routes
+app.use('/api', sanitizeInput); // Sanitize input for API routes
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -39,13 +48,9 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Error handling middleware (must be last)
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

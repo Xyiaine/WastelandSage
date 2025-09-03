@@ -37,6 +37,11 @@ import { generateEvent, generateNPC, type EventGenerationContext, type NPCGenera
 import { exportScenariosToExcel, importScenariosFromExcel, validateImportedData } from "./services/excel";
 import { ZodError } from "zod";
 import multer from "multer";
+import { Request, Response } from 'express';
+import { MemoryStorage } from './storage';
+import { asyncHandler } from './middleware/error-handler';
+import { aiGenerationLimit } from './middleware/security';
+import { validateInput, SessionCreateSchema, SessionUpdateSchema, NodeCreateSchema, EventGenerationSchema } from './utils/validation';
 
 /**
  * Enhanced logging utility for requests
@@ -57,7 +62,7 @@ function formatErrorResponse(error: Error): { error: string; code?: string; deta
       code: error.code
     };
   }
-  
+
   if (error instanceof ZodError) {
     return {
       error: 'Validation failed',
@@ -65,14 +70,14 @@ function formatErrorResponse(error: Error): { error: string; code?: string; deta
       details: error.errors
     };
   }
-  
+
   if (error instanceof AIServiceError) {
     return {
       error: error.message,
       code: error.code
     };
   }
-  
+
   return {
     error: error.message || 'An unexpected error occurred',
     code: 'INTERNAL_ERROR'
@@ -96,52 +101,52 @@ function getErrorStatusCode(error: Error): number {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('[Routes] Registering API endpoints...');
-  
+
   /**
    * SESSION MANAGEMENT ENDPOINTS
    * Handle core RPG session operations
    */
   // Create new session
-  app.post("/api/sessions", async (req, res) => {
+  app.post("/api/sessions", asyncHandler(async (req: Request, res: Response) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating session: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertSessionSchema.parse(req.body);
       const session = await storage.createSession(data);
-      
+
       logRequest('POST', '/api/sessions', startTime, 201, `Created session: ${session.name}`);
       res.status(201).json(session);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/sessions', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
-  });
+  }));
 
   // Get session by ID
   app.get("/api/sessions/:id", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.id;
-    
+
     try {
       const session = await storage.getSession(sessionId);
       if (!session) {
         logRequest('GET', `/api/sessions/${sessionId}`, startTime, 404, 'Session not found');
         return res.status(404).json({ error: "Session not found", code: 'NOT_FOUND' });
       }
-      
+
       logRequest('GET', `/api/sessions/${sessionId}`, startTime, 200, `Retrieved: ${session.name}`);
       res.json(session);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -151,19 +156,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/sessions/:id", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.id;
-    
+
     try {
       console.log(`[API] Updating session ${sessionId}: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const session = await storage.updateSession(sessionId, req.body);
-      
+
       logRequest('PATCH', `/api/sessions/${sessionId}`, startTime, 200, `Updated: ${session.name}`);
       res.json(session);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('PATCH', `/api/sessions/${sessionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -173,17 +178,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/sessions/:id", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.id;
-    
+
     try {
       await storage.deleteSession(sessionId);
-      
+
       logRequest('DELETE', `/api/sessions/${sessionId}`, startTime, 200, 'Session deleted with cascade');
       res.json({ success: true, message: 'Session and related data deleted successfully' });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/sessions/${sessionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -198,17 +203,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/nodes", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const nodes = await storage.getSessionNodes(sessionId);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/nodes`, startTime, 200, `Retrieved ${nodes.length} nodes`);
       res.json(nodes);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/nodes`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -217,20 +222,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new node
   app.post("/api/nodes", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating node: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertNodeSchema.parse(req.body);
       const node = await storage.createNode(data);
-      
+
       logRequest('POST', '/api/nodes', startTime, 201, `Created node: ${node.name} (${node.type})`);
       res.status(201).json(node);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/nodes', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -240,19 +245,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/nodes/:id", async (req, res) => {
     const startTime = Date.now();
     const nodeId = req.params.id;
-    
+
     try {
       console.log(`[API] Updating node ${nodeId}: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const node = await storage.updateNode(nodeId, req.body);
-      
+
       logRequest('PATCH', `/api/nodes/${nodeId}`, startTime, 200, `Updated node: ${node.name}`);
       res.json(node);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('PATCH', `/api/nodes/${nodeId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -262,17 +267,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/nodes/:id", async (req, res) => {
     const startTime = Date.now();
     const nodeId = req.params.id;
-    
+
     try {
       await storage.deleteNode(nodeId);
-      
+
       logRequest('DELETE', `/api/nodes/${nodeId}`, startTime, 200, 'Node deleted with cascade');
       res.json({ success: true, message: 'Node and related connections deleted successfully' });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/nodes/${nodeId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -287,17 +292,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/connections", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const connections = await storage.getSessionConnections(sessionId);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/connections`, startTime, 200, `Retrieved ${connections.length} connections`);
       res.json(connections);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/connections`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -306,20 +311,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new connection
   app.post("/api/connections", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating connection: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertConnectionSchema.parse(req.body);
       const connection = await storage.createConnection(data);
-      
+
       logRequest('POST', '/api/connections', startTime, 201, `Created connection: ${connection.type} (strength ${connection.strength})`);
       res.status(201).json(connection);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/connections', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -329,17 +334,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/connections/:id", async (req, res) => {
     const startTime = Date.now();
     const connectionId = req.params.id;
-    
+
     try {
       await storage.deleteConnection(connectionId);
-      
+
       logRequest('DELETE', `/api/connections/${connectionId}`, startTime, 200, 'Connection deleted');
       res.json({ success: true, message: 'Connection deleted successfully' });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/connections/${connectionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -354,17 +359,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/timeline", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const events = await storage.getSessionTimeline(sessionId);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/timeline`, startTime, 200, `Retrieved ${events.length} timeline events`);
       res.json(events);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/timeline`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -373,20 +378,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new timeline event
   app.post("/api/timeline-events", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating timeline event: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertTimelineEventSchema.parse(req.body);
       const event = await storage.createTimelineEvent(data);
-      
+
       logRequest('POST', '/api/timeline-events', startTime, 201, `Created event: ${event.name} (${event.phase})`);
       res.status(201).json(event);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/timeline-events', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -396,19 +401,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/timeline-events/:id", async (req, res) => {
     const startTime = Date.now();
     const eventId = req.params.id;
-    
+
     try {
       console.log(`[API] Updating timeline event ${eventId}: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const event = await storage.updateTimelineEvent(eventId, req.body);
-      
+
       logRequest('PATCH', `/api/timeline-events/${eventId}`, startTime, 200, `Updated event: ${event.name}`);
       res.json(event);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('PATCH', `/api/timeline-events/${eventId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -418,17 +423,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/timeline-events/:id", async (req, res) => {
     const startTime = Date.now();
     const eventId = req.params.id;
-    
+
     try {
       await storage.deleteTimelineEvent(eventId);
-      
+
       logRequest('DELETE', `/api/timeline-events/${eventId}`, startTime, 200, 'Timeline event deleted');
       res.json({ success: true, message: 'Timeline event deleted successfully' });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/timeline-events/${eventId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -438,24 +443,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sessions/:sessionId/timeline/reorder", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const { orderedIds } = req.body;
       console.log(`[API] Reordering timeline for session ${sessionId}: ${orderedIds?.length || 0} events`);
-      
+
       if (!Array.isArray(orderedIds)) {
         throw new ValidationError('orderedIds must be an array');
       }
-      
+
       await storage.reorderTimelineEvents(sessionId, orderedIds);
-      
+
       logRequest('POST', `/api/sessions/${sessionId}/timeline/reorder`, startTime, 200, `Reordered ${orderedIds.length} events`);
       res.json({ success: true, message: 'Timeline events reordered successfully' });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', `/api/sessions/${sessionId}/timeline/reorder`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -467,22 +472,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
 
   // Generate AI-powered event
-  app.post("/api/generate-event", async (req, res) => {
+  app.post("/api/generate-event", aiGenerationLimit, async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Generating AI event with context: ${JSON.stringify(req.body, null, 2)}`);
-      
-      const context: EventGenerationContext = req.body;
+
+      const context: EventGenerationContext = validateInput(EventGenerationSchema, req.body);
       const event = await generateEvent(context);
-      
+
       logRequest('POST', '/api/generate-event', startTime, 200, `Generated event: ${event.name} (${event.pacingImpact})`);
       res.json(event);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/generate-event', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -491,20 +496,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate AI-powered NPC
   app.post("/api/generate-npc", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Generating AI NPC with context: ${JSON.stringify(req.body, null, 2)}`);
-      
-      const context: NPCGenerationContext = req.body;
+
+      const context: NPCGenerationContext = req.body; // Assuming NPCGenerationContext is also validated or handled upstream
       const npc = await generateNPC(context);
-      
+
       logRequest('POST', '/api/generate-npc', startTime, 200, `Generated NPC: ${npc.name} (${npc.type})`);
       res.json(npc);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/generate-npc', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -519,21 +524,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scenarios", async (req, res) => {
     const startTime = Date.now();
     const userId = req.query.userId as string;
-    
+
     try {
       if (!userId) {
         return res.status(400).json({ error: "userId query parameter is required", code: 'MISSING_PARAMETER' });
       }
 
       const scenarios = await storage.getUserScenarios(userId);
-      
+
       logRequest('GET', '/api/scenarios', startTime, 200, `Retrieved ${scenarios.length} scenarios for user ${userId}`);
       res.json(scenarios);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', '/api/scenarios', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -542,35 +547,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export scenarios to Excel (must be before :id route)
   app.get("/api/scenarios/export", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       const { userId } = req.query;
       console.log(`[API] Exporting scenarios for user: ${userId || 'all'}`);
-      
+
       // Fetch all scenarios for the user (or all if no userId)
       const scenarios = await storage.getUserScenarios(userId as string || 'demo-user');
-      
+
       // Fetch all regions for these scenarios
       const allRegions = [];
       for (const scenario of scenarios) {
         const regions = await storage.getScenarioRegions(scenario.id);
         allRegions.push(...regions);
       }
-      
+
       // Generate Excel file
       const excelBuffer = exportScenariosToExcel(scenarios, allRegions);
-      
+
       // Set headers for file download
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="scenarios_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
-      
+
       logRequest('GET', '/api/scenarios/export', startTime, 200, `Exported ${scenarios.length} scenarios, ${allRegions.length} regions`);
       res.send(excelBuffer);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', '/api/scenarios/export', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -580,21 +585,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scenarios/:id", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.id;
-    
+
     try {
       const scenario = await storage.getScenario(scenarioId);
       if (!scenario) {
         logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, 404, 'Scenario not found');
         return res.status(404).json({ error: "Scenario not found", code: 'NOT_FOUND' });
       }
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, 200, `Retrieved: ${scenario.title}`);
       res.json(scenario);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -603,20 +608,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new scenario
   app.post("/api/scenarios", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating scenario: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertScenarioSchema.parse(req.body);
       const scenario = await storage.createScenario(data);
-      
+
       logRequest('POST', '/api/scenarios', startTime, 201, `Created scenario: ${scenario.title}`);
       res.status(201).json(scenario);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/scenarios', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -626,19 +631,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/scenarios/:id", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.id;
-    
+
     try {
       console.log(`[API] Updating scenario ${scenarioId}: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const scenario = await storage.updateScenario(scenarioId, req.body);
-      
+
       logRequest('PATCH', `/api/scenarios/${scenarioId}`, startTime, 200, `Updated: ${scenario.title}`);
       res.json(scenario);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('PATCH', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -648,17 +653,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/scenarios/:id", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.id;
-    
+
     try {
       await storage.deleteScenario(scenarioId);
-      
+
       logRequest('DELETE', `/api/scenarios/${scenarioId}`, startTime, 204, 'Scenario deleted');
       res.status(204).send();
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/scenarios/${scenarioId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -673,17 +678,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scenarios/:scenarioId/regions", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.scenarioId;
-    
+
     try {
       const regions = await storage.getScenarioRegions(scenarioId);
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}/regions`, startTime, 200, `Retrieved ${regions.length} regions`);
       res.json(regions);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}/regions`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -693,21 +698,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/regions/:id", async (req, res) => {
     const startTime = Date.now();
     const regionId = req.params.id;
-    
+
     try {
       const region = await storage.getRegion(regionId);
       if (!region) {
         logRequest('GET', `/api/regions/${regionId}`, startTime, 404, 'Region not found');
         return res.status(404).json({ error: "Region not found", code: 'NOT_FOUND' });
       }
-      
+
       logRequest('GET', `/api/regions/${regionId}`, startTime, 200, `Retrieved: ${region.name}`);
       res.json(region);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -716,20 +721,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new region
   app.post("/api/regions", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       console.log(`[API] Creating region: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const data = insertRegionSchema.parse(req.body);
       const region = await storage.createRegion(data);
-      
+
       logRequest('POST', '/api/regions', startTime, 201, `Created region: ${region.name} (${region.type})`);
       res.status(201).json(region);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/regions', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -739,19 +744,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/regions/:id", async (req, res) => {
     const startTime = Date.now();
     const regionId = req.params.id;
-    
+
     try {
       console.log(`[API] Updating region ${regionId}: ${JSON.stringify(req.body, null, 2)}`);
-      
+
       const region = await storage.updateRegion(regionId, req.body);
-      
+
       logRequest('PATCH', `/api/regions/${regionId}`, startTime, 200, `Updated: ${region.name}`);
       res.json(region);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('PATCH', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -761,17 +766,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/regions/:id", async (req, res) => {
     const startTime = Date.now();
     const regionId = req.params.id;
-    
+
     try {
       await storage.deleteRegion(regionId);
-      
+
       logRequest('DELETE', `/api/regions/${regionId}`, startTime, 204, 'Region deleted');
       res.status(204).send();
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/regions/${regionId}`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -786,17 +791,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/scenarios", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const scenarios = await storage.getSessionScenarios(sessionId);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/scenarios`, startTime, 200, `Retrieved ${scenarios.length} scenarios`);
       res.json(scenarios);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/sessions/${sessionId}/scenarios`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -806,17 +811,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scenarios/:scenarioId/sessions", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.scenarioId;
-    
+
     try {
       const sessions = await storage.getScenarioSessions(scenarioId);
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}/sessions`, startTime, 200, `Retrieved ${sessions.length} sessions`);
       res.json(sessions);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('GET', `/api/scenarios/${scenarioId}/sessions`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -826,19 +831,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/scenarios/:scenarioId/sessions/:sessionId/link", async (req, res) => {
     const startTime = Date.now();
     const { scenarioId, sessionId } = req.params;
-    
+
     try {
       console.log(`[API] Linking scenario ${scenarioId} to session ${sessionId}`);
-      
+
       const link = await storage.linkScenarioToSession(scenarioId, sessionId);
-      
+
       logRequest('POST', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, 201, 'Linked successfully');
       res.status(201).json(link);
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -848,19 +853,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/scenarios/:scenarioId/sessions/:sessionId/link", async (req, res) => {
     const startTime = Date.now();
     const { scenarioId, sessionId } = req.params;
-    
+
     try {
       console.log(`[API] Unlinking scenario ${scenarioId} from session ${sessionId}`);
-      
+
       await storage.unlinkScenarioFromSession(scenarioId, sessionId);
-      
+
       logRequest('DELETE', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, 204, 'Unlinked successfully');
       res.status(204).send();
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('DELETE', `/api/scenarios/${scenarioId}/sessions/${sessionId}/link`, startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -889,17 +894,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import scenarios from Excel
   app.post("/api/scenarios/import", upload.single('file'), async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       if (!req.file) {
         throw new ValidationError('No file uploaded');
       }
-      
+
       console.log(`[API] Importing scenarios from file: ${req.file.originalname}`);
-      
+
       // Parse Excel file
       const importedData = importScenariosFromExcel(req.file.buffer);
-      
+
       // Validate imported data
       const validation = validateImportedData(importedData);
       if (!validation.isValid) {
@@ -910,11 +915,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: validation.errors
         });
       }
-      
+
       // Import scenarios
       const importedScenarios = [];
       const scenarioIdMap = new Map<string, string>(); // old ID -> new ID mapping
-      
+
       for (const scenarioData of importedData.scenarios) {
         try {
           const scenario = await storage.createScenario({
@@ -924,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: req.body.userId || 'demo-user'
           });
           importedScenarios.push(scenario);
-          
+
           // For regions that reference scenario IDs, we need to map them
           const originalId = scenarioData.title; // Use title as temporary mapping
           scenarioIdMap.set(originalId, scenario.id);
@@ -932,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.warn(`Failed to import scenario: ${scenarioData.title}`, error);
         }
       }
-      
+
       // Import regions
       const importedRegions = [];
       for (const regionData of importedData.regions) {
@@ -943,7 +948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // If no scenario ID specified, assign to first imported scenario
             scenarioId = importedScenarios[0].id;
           }
-          
+
           const region = await storage.createRegion({
             ...regionData,
             type: regionData.type as 'city' | 'settlement' | 'wasteland' | 'fortress' | 'trade_hub',
@@ -961,7 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.warn(`Failed to import region: ${regionData.name}`, error);
         }
       }
-      
+
       logRequest('POST', '/api/scenarios/import', startTime, 201, `Imported ${importedScenarios.length} scenarios, ${importedRegions.length} regions`);
       res.status(201).json({
         success: true,
@@ -972,11 +977,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scenarios: importedScenarios,
         regions: importedRegions
       });
-      
+
     } catch (error) {
       const statusCode = getErrorStatusCode(error as Error);
       const errorResponse = formatErrorResponse(error as Error);
-      
+
       logRequest('POST', '/api/scenarios/import', startTime, statusCode, `Error: ${errorResponse.error}`);
       res.status(statusCode).json(errorResponse);
     }
@@ -990,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/scenarios/:scenarioId/npcs", async (req, res) => {
     const startTime = Date.now();
     const scenarioId = req.params.scenarioId;
-    
+
     try {
       const npcs = await storage.getScenarioNPCs(scenarioId);
       logRequest('GET', `/api/scenarios/${scenarioId}/npcs`, startTime, 200, `Retrieved ${npcs.length} NPCs`);
@@ -1006,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create scenario NPC
   app.post("/api/scenario-npcs", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       const data = updatedInsertScenarioNPCSchema.parse(req.body);
       const npc = await storage.createScenarioNPC(data);
@@ -1024,7 +1029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/scenario-npcs/:id", async (req, res) => {
     const startTime = Date.now();
     const npcId = req.params.id;
-    
+
     try {
       const npc = await storage.updateScenarioNPC(npcId, req.body);
       logRequest('PATCH', `/api/scenario-npcs/${npcId}`, startTime, 200, `Updated NPC: ${npc.name}`);
@@ -1041,7 +1046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/scenario-npcs/:id", async (req, res) => {
     const startTime = Date.now();
     const npcId = req.params.id;
-    
+
     try {
       await storage.deleteScenarioNPC(npcId);
       logRequest('DELETE', `/api/scenario-npcs/${npcId}`, startTime, 204, 'NPC deleted');
@@ -1058,7 +1063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/scenario-npcs/:id/suppress", async (req, res) => {
     const startTime = Date.now();
     const npcId = req.params.id;
-    
+
     try {
       const npc = await storage.suppressScenarioNPC(npcId);
       logRequest('PATCH', `/api/scenario-npcs/${npcId}/suppress`, startTime, 200, `Suppressed NPC: ${npc.name}`);
@@ -1075,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/scenario-npcs/:id/restore", async (req, res) => {
     const startTime = Date.now();
     const npcId = req.params.id;
-    
+
     try {
       const npc = await storage.restoreScenarioNPC(npcId);
       logRequest('PATCH', `/api/scenario-npcs/${npcId}/restore`, startTime, 200, `Restored NPC: ${npc.name}`);
@@ -1096,7 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:userId/characters", async (req, res) => {
     const startTime = Date.now();
     const userId = req.params.userId;
-    
+
     try {
       const characters = await storage.getUserCharacters(userId);
       logRequest('GET', `/api/users/${userId}/characters`, startTime, 200, `Retrieved ${characters.length} characters`);
@@ -1113,7 +1118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/characters", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const characters = await storage.getSessionCharacters(sessionId);
       logRequest('GET', `/api/sessions/${sessionId}/characters`, startTime, 200, `Retrieved ${characters.length} characters`);
@@ -1129,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create player character
   app.post("/api/characters", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       const data = insertPlayerCharacterSchema.parse(req.body);
       const character = await storage.createPlayerCharacter(data);
@@ -1147,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/characters/:id", async (req, res) => {
     const startTime = Date.now();
     const characterId = req.params.id;
-    
+
     try {
       const character = await storage.updatePlayerCharacter(characterId, req.body);
       logRequest('PATCH', `/api/characters/${characterId}`, startTime, 200, `Updated character: ${character.name}`);
@@ -1164,7 +1169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/characters/:id", async (req, res) => {
     const startTime = Date.now();
     const characterId = req.params.id;
-    
+
     try {
       await storage.deletePlayerCharacter(characterId);
       logRequest('DELETE', `/api/characters/${characterId}`, startTime, 204, 'Character deleted');
@@ -1185,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:sessionId/players", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const players = await storage.getSessionPlayers(sessionId);
       logRequest('GET', `/api/sessions/${sessionId}/players`, startTime, 200, `Retrieved ${players.length} players`);
@@ -1202,7 +1207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sessions/:sessionId/players", async (req, res) => {
     const startTime = Date.now();
     const sessionId = req.params.sessionId;
-    
+
     try {
       const data = insertSessionPlayerSchema.parse({ ...req.body, sessionId });
       const player = await storage.addPlayerToSession(data);
@@ -1220,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/session-players/:id", async (req, res) => {
     const startTime = Date.now();
     const playerId = req.params.id;
-    
+
     try {
       const player = await storage.updateSessionPlayer(playerId, req.body);
       logRequest('PATCH', `/api/session-players/${playerId}`, startTime, 200, `Updated player: ${player.userId}`);
@@ -1237,7 +1242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/session-players/:id", async (req, res) => {
     const startTime = Date.now();
     const playerId = req.params.id;
-    
+
     try {
       await storage.removePlayerFromSession(playerId);
       logRequest('DELETE', `/api/session-players/${playerId}`, startTime, 204, 'Player removed from session');
@@ -1258,7 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       const stats = await storage.getStorageStats();
       const healthData = {
@@ -1277,10 +1282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       };
-      
+
       logRequest('GET', '/api/health', startTime, 200, `Storage: ${Object.values(stats).reduce((a, b) => a + b, 0)} total entities`);
       res.json(healthData);
-      
+
     } catch (error) {
       const errorResponse = formatErrorResponse(error as Error);
       logRequest('GET', '/api/health', startTime, 500, `Health check failed: ${errorResponse.error}`);
@@ -1293,7 +1298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-  
+
   console.log('[Routes] All API endpoints registered successfully');
   console.log('[Routes] Available endpoints:');
   console.log('  - POST   /api/sessions');
@@ -1346,6 +1351,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('  - PATCH  /api/session-players/:id');
   console.log('  - DELETE /api/session-players/:id');
   console.log('  - GET    /api/health');
-  
+
   return httpServer;
 }

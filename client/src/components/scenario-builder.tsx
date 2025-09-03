@@ -229,7 +229,7 @@ const SCENARIO_TEMPLATES = [
   }
 ];
 
-export function ScenarioBuilder() {
+const ScenarioBuilder: React.FC = React.memo(() => {
   const { t } = useTranslation();
 
   // State management
@@ -1712,7 +1712,7 @@ export function ScenarioBuilder() {
                     id="worldContext"
                     value={scenarioForm.worldContext}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, worldContext: e.target.value }))}
-                    placeholder="Background setting information..."
+                    placeholder="Describe the setting, geography, and environmental conditions..."
                     className={`bg-slate-700 border-slate-600 text-white h-32 ${
                       (scenarioForm.worldContext?.length || 0) > 10000 ? 'border-red-500' : ''
                     }`}
@@ -1728,7 +1728,7 @@ export function ScenarioBuilder() {
                     id="politicalSituation"
                     value={scenarioForm.politicalSituation}
                     onChange={(e) => setScenarioForm(prev => ({ ...prev, politicalSituation: e.target.value }))}
-                    placeholder="Current political climate and tensions..."
+                    placeholder="Describe the power dynamics, conflicts, and alliances..."
                     className={`bg-slate-700 border-slate-600 text-white h-32 ${
                       (scenarioForm.politicalSituation?.length || 0) > 10000 ? 'border-red-500' : ''
                     }`}

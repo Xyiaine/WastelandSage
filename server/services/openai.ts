@@ -55,24 +55,24 @@ export interface EventGenerationContext {
   creatorMode: 'road' | 'city';
   currentPhase?: string;
   aiMode?: 'chaos' | 'continuity';
-  
+
   // Event generation parameters
   eventType?: string;         // e.g., "combat", "politics", "discovery", etc.
-  
+
   // Session history for narrative continuity
   recentEvents?: Array<{
     name: string;
     description: string;
     phase: string;
   }>;
-  
+
   // Connected story elements for integration
   connectedNodes?: Array<{
     type: string;
     name: string;
     description: string;
   }>;
-  
+
   // Scenario context for world-aware generation
   scenarioContext?: {
     title: string;
@@ -89,7 +89,7 @@ export interface EventGenerationContext {
       resources?: string[];
     }>;
   };
-  
+
   // Environmental context
   environment?: string;        // e.g., "wasteland", "ruins", "settlement"
   threatLevel?: string;        // e.g., "low", "medium", "high"
@@ -104,7 +104,7 @@ export interface EventGenerationContext {
 export interface GeneratedEvent {
   name: string;               // Short, memorable event title
   description: string;        // Detailed GM description with setting, NPCs, situation
-  
+
   // Story elements to add to the scenario library
   suggestedNodes: Array<{
     type: 'event' | 'npc' | 'faction' | 'location' | 'item';
@@ -112,7 +112,7 @@ export interface GeneratedEvent {
     description: string;
     properties: Record<string, any>; // Type-specific data (stats, motivations, etc.)
   }>;
-  
+
   // Narrative connections to existing story elements
   suggestedConnections: Array<{
     fromType: string;          // Type of existing element
@@ -122,10 +122,10 @@ export interface GeneratedEvent {
     connectionType: 'temporal' | 'spatial' | 'factional' | 'ownership';
     reasoning?: string;        // Why this connection makes sense
   }>;
-  
+
   estimatedDuration: number;  // Duration in minutes for pacing
   pacingImpact: 'accelerate' | 'slow' | 'tension' | 'resolve';
-  
+
   // Additional GM tools
   gameplayTips?: string[];    // Suggestions for running the event
   alternativeOutcomes?: string[]; // Different ways the event could resolve
@@ -149,7 +149,7 @@ function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent 
   const threatLevel = context.threatLevel || 'medium';
   const timeOfDay = context.timeOfDay || 'noon';
   const weather = context.weather || 'clear';
-  
+
   // Rich event templates organized by type and environment
   const roadEventTemplates = {
     combat: [
@@ -219,7 +219,7 @@ function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent 
       { name: "Settlement Recruiter", description: `A representative from a nearby settlement offers citizenship and jobs to skilled individuals. The community sounds too good to be true, which raises questions about what they're not telling you.`, nodes: [{ type: 'location', name: 'Prosperity Settlement', description: 'Thriving community with mysterious prosperity' }] }
     ]
   };
-  
+
   const cityEventTemplates = {
     politics: [
       { name: "The Water Vote", description: `The settlement's council chamber buzzes with tension as representatives from three major factions debate control of the newly discovered aquifer. Each faction has brought armed supporters who eye each other warily. The player characters' influence could tip the balance of power in the settlement for generations.`, nodes: [{ type: 'faction', name: 'Steelworkers Union', description: 'Skilled technicians who maintain the settlement\'s infrastructure' }] },
@@ -282,11 +282,11 @@ function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent 
       { name: "Security Breach", description: `The settlement's defensive systems have been compromised, leaving the community vulnerable to outside attack. The breach may be due to sabotage, equipment failure, or cyber intrusion.`, nodes: [{ type: 'location', name: 'Security Command Center', description: 'Compromised defensive control facility' }] }
     ]
   };
-  
+
   // Get appropriate template based on mode and event type
   const templates = context.creatorMode === 'road' ? roadEventTemplates : cityEventTemplates;
   const eventGroup = (templates as any)[eventType] as any[];
-  
+
   if (!eventGroup || !Array.isArray(eventGroup) || eventGroup.length === 0) {
     // Generic fallback
     return {
@@ -301,12 +301,12 @@ function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent 
       requiredPreparation: ['Basic NPC stats', 'Environmental details']
     };
   }
-  
+
   // Randomly select from available events in this category
   const randomIndex = Math.floor(Math.random() * eventGroup.length);
   const template = eventGroup[randomIndex];
   const duration = threatLevel === 'low' ? 20 : threatLevel === 'high' ? 45 : 30;
-  
+
   return {
     name: template.name,
     description: `${template.description}\n\nThe weather is ${weather === 'clear' ? 'harsh and unforgiving' : weather === 'sandstorm' ? 'creating a brown haze that limits visibility' : weather === 'acidrain' ? 'causing the metal around you to hiss and steam' : 'charged with radiation that makes your dosimeter click ominously'}. The ${timeOfDay} ${timeOfDay === 'night' ? 'darkness provides cover but also conceals dangers' : 'lighting affects visibility and tactical options'}.`,
@@ -333,46 +333,31 @@ function generateFallbackEvent(context: EventGenerationContext): GeneratedEvent 
 }
 
 export async function generateEvent(context: EventGenerationContext): Promise<GeneratedEvent> {
-  // Input validation with defaults
-  if (!context.sessionId || !context.creatorMode) {
-    throw new AIValidationError('Missing required context fields: sessionId and creatorMode');
-  }
-  
-  // Set defaults for optional fields
-  const currentPhase = context.currentPhase || 'exploration';
-  const aiMode = context.aiMode || 'continuity';
-  const recentEvents = context.recentEvents || [];
-  const connectedNodes = context.connectedNodes || [];
-  
-  if (!['road', 'city'].includes(context.creatorMode)) {
-    throw new AIValidationError(`Invalid creator mode: ${context.creatorMode}`);
-  }
-  
-  if (context.aiMode && !['chaos', 'continuity'].includes(context.aiMode)) {
-    throw new AIValidationError(`Invalid AI mode: ${context.aiMode}`);
+  // Input validation
+  if (!context || typeof context !== 'object') {
+    throw new Error('Invalid context provided');
   }
 
-  console.log(`[OpenAI] Generating ${context.creatorMode} event for phase ${currentPhase} (${aiMode} mode)${context.eventType ? ` - ${context.eventType}` : ''}`);
-  
-  const enhancedContext = {
+  // Sanitize string inputs to prevent injection
+  const sanitizedContext = {
     ...context,
-    currentPhase,
-    aiMode,
-    recentEvents,
-    connectedNodes
+    environment: context.environment ? String(context.environment).slice(0, 100) : undefined,
+    eventType: context.eventType ? String(context.eventType).slice(0, 50) : undefined,
+    timeOfDay: context.timeOfDay ? String(context.timeOfDay).slice(0, 20) : undefined,
+    weather: context.weather ? String(context.weather).slice(0, 50) : undefined
   };
-  
-  const prompt = createEventPrompt(enhancedContext);
-  
+
+  const prompt = createEventPrompt(sanitizedContext);
+
   try {
     const startTime = Date.now();
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-5",
       messages: [
         {
           role: "system",
-          content: getSystemPrompt(enhancedContext)
+          content: getSystemPrompt(sanitizedContext)
         },
         {
           role: "user",
@@ -380,7 +365,7 @@ export async function generateEvent(context: EventGenerationContext): Promise<Ge
         }
       ],
       response_format: { type: "json_object" },
-      temperature: aiMode === 'chaos' ? 0.8 : 0.4,
+      temperature: sanitizedContext.aiMode === 'chaos' ? 0.8 : 0.4,
       max_tokens: 2000, // Ensure sufficient space for detailed responses
     });
 
@@ -393,16 +378,16 @@ export async function generateEvent(context: EventGenerationContext): Promise<Ge
 
     const result = JSON.parse(response.choices[0].message.content);
     const validatedEvent = validateGeneratedEvent(result);
-    
+
     console.log(`[OpenAI] Generated event: ${validatedEvent.name} (${validatedEvent.pacingImpact} impact)`);
     return validatedEvent;
-    
+
   } catch (error) {
     console.error('[OpenAI] Event generation failed, falling back to local generation:', error);
-    
+
     // Instead of throwing errors, fall back to rich local event generation
     console.log('[OpenAI] API unavailable, using rich local event generation');
-    const fallbackEvent = generateFallbackEvent(enhancedContext);
+    const fallbackEvent = generateFallbackEvent(sanitizedContext);
     console.log(`[Local] Generated fallback event: ${fallbackEvent.name}`);
     return fallbackEvent;
   }
@@ -415,7 +400,7 @@ function getSystemPrompt(context: EventGenerationContext): string {
   const modeDescription = context.creatorMode === 'road' 
     ? 'survival-focused wasteland travel with resource scarcity, vehicle encounters, and environmental hazards'
     : 'intrigue-driven settlement politics with faction conflicts, social maneuvering, and resource control';
-    
+
   const aiModeDescription = context.aiMode === 'chaos'
     ? 'Create unpredictable, high-action events that shake up the status quo'
     : 'Generate logical events that build on existing narrative threads';
@@ -445,7 +430,7 @@ function createEventPrompt(context: EventGenerationContext): string {
   const scenarioType = context.creatorMode === 'road' ? 'wasteland road' : 'settlement/city';
   const focusType = context.creatorMode === 'road' ? 'survival/action-focused' : 'intrigue/social-focused';
   const aiModeDesc = context.aiMode === 'chaos' ? 'unpredictable, high-action' : 'logical, story-consistent';
-  
+
   // Enhanced context descriptions for different environments and event types
   const environmentDescriptions = {
     // Road environments
@@ -463,7 +448,7 @@ function createEventPrompt(context: EventGenerationContext): string {
     market: 'bustling merchant hub with improvised stalls and traders',
     fortress: 'heavily fortified compound with armed guards and walls'
   };
-  
+
   const eventTypeGuidelines = {
     // Road event types
     combat: 'hostile encounter requiring tactical decisions - raiders, mutants, or territorial gangs',
@@ -482,7 +467,7 @@ function createEventPrompt(context: EventGenerationContext): string {
     festival: 'special celebration or gathering - markets, competitions, cultural events',
     crisis: 'urgent settlement emergency requiring immediate action - disasters, attacks, system failures'
   };
-  
+
   let prompt = `Generate an RPG event for a ${scenarioType} scenario in a dieselpunk post-apocalyptic setting.
 
 **Session Context:**
@@ -499,15 +484,15 @@ function createEventPrompt(context: EventGenerationContext): string {
   if (context.threatLevel) {
     prompt += `\n- Threat Level: ${context.threatLevel}`;
   }
-  
+
   if (context.timeOfDay) {
     prompt += `\n- Time of Day: ${context.timeOfDay}`;
   }
-  
+
   if (context.weather) {
     prompt += `\n- Weather: ${context.weather}`;
   }
-  
+
   if (context.playerCount) {
     prompt += `\n- Player Count: ${context.playerCount}`;
   }
@@ -700,23 +685,36 @@ export interface GeneratedNPC {
  */
 export async function generateNPC(context: NPCGenerationContext): Promise<GeneratedNPC> {
   // Input validation
+  if (!context || typeof context !== 'object') {
+    throw new Error('Invalid context provided');
+  }
   if (!context.setting || !['road', 'city'].includes(context.setting)) {
     throw new AIValidationError(`Invalid setting: ${context.setting}`);
   }
 
+  // Sanitize string inputs
+  const sanitizedContext: NPCGenerationContext = {
+    ...context,
+    faction: context.faction ? String(context.faction).slice(0, 50) : undefined,
+    role: context.role ? String(context.role).slice(0, 50) : undefined,
+    relationship: context.relationship,
+    importance: context.importance,
+    threatLevel: context.threatLevel
+  };
+
   console.log(`[OpenAI] Generating ${context.setting} NPC${context.faction ? ` for faction ${context.faction}` : ''}`);
-  
-  const prompt = createNPCPrompt(context);
-  
+
+  const prompt = createNPCPrompt(sanitizedContext);
+
   try {
     const startTime = Date.now();
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-5",
       messages: [
         {
           role: "system",
-          content: getNPCSystemPrompt(context)
+          content: getNPCSystemPrompt(sanitizedContext)
         },
         {
           role: "user",
@@ -737,21 +735,21 @@ export async function generateNPC(context: NPCGenerationContext): Promise<Genera
 
     const result = JSON.parse(response.choices[0].message.content);
     const validatedNPC = validateGeneratedNPC(result);
-    
+
     console.log(`[OpenAI] Generated NPC: ${validatedNPC.name} (${validatedNPC.type})`);
     return validatedNPC;
-    
+
   } catch (error) {
     console.error('[OpenAI] NPC generation failed:', error);
-    
+
     if (error instanceof SyntaxError) {
       throw new AIValidationError(`Invalid JSON response from AI: ${error.message}`);
     }
-    
+
     if (error instanceof AIServiceError) {
       throw error;
     }
-    
+
     throw new AIGenerationError(
       `Failed to generate NPC: ${error instanceof Error ? error.message : 'Unknown error'}`,
       error instanceof Error ? error : undefined
@@ -787,25 +785,25 @@ Always respond with valid JSON in the exact format specified.`;
  */
 function createNPCPrompt(context: NPCGenerationContext): string {
   const settingDesc = context.setting === 'road' ? 'road encounter' : 'settlement';
-  
+
   let prompt = `Generate a wasteland NPC for a ${settingDesc} in a dieselpunk post-apocalyptic setting.\n\n**Context:**`;
-  
+
   if (context.faction) {
     prompt += `\n- Faction: ${context.faction}`;
   }
-  
+
   if (context.role) {
     prompt += `\n- Role: ${context.role}`;
   }
-  
+
   if (context.threatLevel) {
     prompt += `\n- Threat Level: ${context.threatLevel}`;
   }
-  
+
   if (context.relationship) {
     prompt += `\n- Relationship to Players: ${context.relationship}`;
   }
-  
+
   if (context.importance) {
     prompt += `\n- Story Importance: ${context.importance}`;
   }
@@ -871,7 +869,7 @@ function validateGeneratedNPC(result: any): GeneratedNPC {
 
   // Validate properties object
   const properties = result.properties || {};
-  
+
   return {
     name: result.name.trim(),
     description: result.description.trim(),
