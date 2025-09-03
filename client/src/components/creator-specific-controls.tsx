@@ -19,8 +19,8 @@ import {
 import type { CreatorMode } from "@/lib/types";
 
 interface CreatorSpecificControlsProps {
-  creatorMode: CreatorMode;
-  sessionId: string | null;
+  session: any; // Session from the database
+  onSessionUpdate: (updates: any) => void;
 }
 
 type RoadEventType = 'combat' | 'hazard' | 'discovery' | 'resource' | 'vehicle' | 'weather' | 'stranger';
@@ -30,7 +30,9 @@ type Environment = 'wasteland' | 'ruins' | 'highway' | 'canyon' | 'settlement' |
 type TimeOfDay = 'dawn' | 'morning' | 'noon' | 'afternoon' | 'dusk' | 'night';
 type Weather = 'clear' | 'sandstorm' | 'acidrain' | 'fog' | 'radiation';
 
-export function CreatorSpecificControls({ creatorMode, sessionId }: CreatorSpecificControlsProps) {
+export function CreatorSpecificControls({ session, onSessionUpdate }: CreatorSpecificControlsProps) {
+  const creatorMode = session?.creatorMode as CreatorMode || 'road';
+  const sessionId = session?.id;
   const { toast } = useToast();
   const [roadEnvironment, setRoadEnvironment] = useState<Environment>('wasteland');
   const [cityEnvironment, setCityEnvironment] = useState<Environment>('settlement');

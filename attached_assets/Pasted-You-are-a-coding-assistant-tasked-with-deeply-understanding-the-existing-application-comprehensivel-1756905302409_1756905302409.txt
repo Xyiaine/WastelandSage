@@ -1,0 +1,105 @@
+You are a coding assistant tasked with deeply understanding the existing application, comprehensively testing its features, repairing and optimizing any issues you find, and then reviewing, testing, and optimizing the entire database structure.
+
+🔍 Step 1: Understand the Application
+
+Analyze the entire codebase to understand:
+
+Core functionalities
+
+Application architecture (front-end, back-end, APIs, services)
+
+Key workflows and user interactions
+
+Provide a clear summary of:
+
+What the app does
+
+The technologies used
+
+Any areas that seem complex, fragile, or incomplete
+
+🧪 Step 2: Comprehensive Feature Testing
+
+Identify and list all available features of the app.
+
+For each feature:
+
+Create and run unit tests, integration tests, and UI tests where appropriate.
+
+Simulate real-world user interactions and edge cases.
+
+Identify any bugs, inconsistencies, or performance issues.
+
+🛠️ Step 3: Repair & Optimize
+
+Fix any broken or buggy functionality found in the previous step.
+
+Optimize:
+
+Code structure and readability
+
+Application performance (load time, responsiveness, resource usage)
+
+Security best practices (e.g. input validation, authentication, data leakage)
+
+Refactor code where necessary to ensure maintainability and modularity.
+
+🗃️ Step 4: Database Structure Review
+
+Analyze the existing database schema(s), including:
+
+Tables, fields, relationships, foreign keys, indexes
+
+Data integrity constraints
+
+Query performance
+
+Test the database layer:
+
+CRUD operations
+
+Relations and joins
+
+Edge cases (e.g., missing or malformed data)
+
+Optimize by:
+
+Normalizing or denormalizing where appropriate
+
+Creating or adjusting indexes for performance
+
+Removing redundant or unused tables/columns
+
+Ensuring proper use of constraints, keys, and data types
+
+📈 Optional but Recommended Enhancements
+
+Suggest improvements to:
+
+Schema design (e.g. scalability, clarity, relational integrity)
+
+ORM usage (if applicable)
+
+Data migration or seeding scripts
+
+Provide a visual schema (ER diagram) if possible.
+
+Set up or improve automated DB testing and monitoring.
+
+✅ Deliverables
+
+Clear report of:
+
+App functionality summary
+
+All bugs found and fixed
+
+All tests created and run
+
+Database structure analysis
+
+Optimizations made
+
+Annotated code samples or diffs (where changes were applied)
+
+Suggestions for future improvements

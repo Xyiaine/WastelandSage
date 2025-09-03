@@ -38,7 +38,7 @@ import { exportScenariosToExcel, importScenariosFromExcel, validateImportedData 
 import { ZodError } from "zod";
 import multer from "multer";
 import { Request, Response } from 'express';
-import { MemoryStorage } from './storage';
+import { MemStorage } from './storage';
 import { asyncHandler } from './middleware/error-handler';
 import { aiGenerationLimit } from './middleware/security';
 import { validateInput, SessionCreateSchema, SessionUpdateSchema, NodeCreateSchema, EventGenerationSchema } from './utils/validation';

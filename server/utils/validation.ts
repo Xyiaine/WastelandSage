@@ -26,7 +26,8 @@ export const NodeUpdateSchema = NodeCreateSchema.partial().omit({ sessionId: tru
 // Event generation validation
 export const EventGenerationSchema = z.object({
   sessionId: z.string().uuid(),
-  focusType: z.enum(['road', 'city']),
+  creatorMode: z.enum(['road', 'city']),
+  focusType: z.enum(['road', 'city']).optional(),
   environment: z.string().max(50).optional(),
   eventType: z.string().max(50).optional(),
   threatLevel: z.enum(['low', 'medium', 'high']).optional(),

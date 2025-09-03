@@ -258,11 +258,15 @@ export class MemStorage implements IStorage {
 
   private cleanCache(): void {
     const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
+    const entriesToDelete: string[] = [];
+    
+    this.cache.forEach((entry, key) => {
       if (now - entry.timestamp > this.CACHE_TTL) {
-        this.cache.delete(key);
+        entriesToDelete.push(key);
       }
-    }
+    });
+    
+    entriesToDelete.forEach(key => this.cache.delete(key));
   }
 
   private getFromCache<T>(key: string): T | null {

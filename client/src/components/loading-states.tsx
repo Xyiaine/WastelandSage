@@ -1,127 +1,94 @@
 /**
- * Loading State Components - Consistent loading indicators
+ * Loading States - Comprehensive loading UI components
  * 
- * Provides various loading states for different UI contexts:
- * - Skeleton loaders for content placeholders
- * - Spinner components for actions
- * - Progressive loading for large datasets
- * - Error states with retry functionality
+ * Provides consistent loading experiences across the application
+ * with skeleton states, spinners, and progress indicators
  */
 
 import React from 'react';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { Card, CardContent } from './ui/card';
+import { Skeleton } from './ui/skeleton';
+import { Button } from './ui/button';
+import { Loader2, RefreshCw } from 'lucide-react';
 
-// Basic spinner component
-interface SpinnerProps {
+interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
+  text?: string;
+  testId?: string;
 }
 
-export function Spinner({ size = 'md', className }: SpinnerProps) {
+export function LoadingSpinner({ size = 'md', text, testId = 'loading-spinner' }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'w-4 h-4',
-    md: 'w-6 h-6',
+    md: 'w-6 h-6', 
     lg: 'w-8 h-8'
   };
 
   return (
-    <Loader2 
-      className={cn('animate-spin', sizeClasses[size], className)}
-      data-testid="spinner-loading"
-    />
+    <div className="flex items-center justify-center gap-2 p-4" data-testid={testId}>
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-primary`} />
+      {text && <span className="text-sm text-muted-foreground">{text}</span>}
+    </div>
   );
 }
 
-// Loading button state
 interface LoadingButtonProps {
-  loading: boolean;
   children: React.ReactNode;
-  onClick?: () => void;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-  className?: string;
-  disabled?: boolean;
+  isLoading?: boolean;
+  variant?: 'default' | 'outline' | 'ghost';
+  size?: 'sm' | 'default' | 'lg';
   testId?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }
 
 export function LoadingButton({ 
-  loading, 
   children, 
-  onClick, 
+  isLoading = false, 
   variant = 'default',
   size = 'default',
-  className,
-  disabled,
-  testId
+  testId,
+  onClick,
+  disabled
 }: LoadingButtonProps) {
   return (
     <Button
       variant={variant}
       size={size}
       onClick={onClick}
-      disabled={loading || disabled}
-      className={className}
+      disabled={disabled || isLoading}
       data-testid={testId}
     >
-      {loading && <Spinner size="sm" className="mr-2" />}
+      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
       {children}
     </Button>
   );
 }
 
-// Session card skeleton
-export function SessionCardSkeleton() {
-  return (
-    <Card className=\"w-full\" data-testid=\"skeleton-session-card\">
-      <CardHeader>
-        <Skeleton className=\"h-6 w-3/4\" />
-        <Skeleton className=\"h-4 w-1/2\" />
-      </CardHeader>
-      <CardContent>
-        <div className=\"space-y-2\">
-          <Skeleton className=\"h-4 w-full\" />
-          <Skeleton className=\"h-4 w-2/3\" />
-        </div>
-        <div className=\"flex justify-between items-center mt-4\">
-          <Skeleton className=\"h-6 w-16\" />
-          <Skeleton className=\"h-8 w-20\" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Node graph skeleton
 export function NodeGraphSkeleton() {
   return (
-    <div className=\"w-full h-96 bg-muted/30 rounded-lg flex items-center justify-center\" data-testid=\"skeleton-node-graph\">
-      <div className=\"text-center space-y-2\">
-        <Spinner size=\"lg\" />
-        <p className=\"text-sm text-muted-foreground\">Loading scenario graph...</p>
+    <div className="w-full h-96 border-2 border-dashed border-muted-foreground/25 rounded-lg bg-muted/10 flex items-center justify-center" data-testid="skeleton-node-graph">
+      <div className="text-center space-y-2">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
+        <p className="text-sm text-muted-foreground">Loading scenario graph...</p>
       </div>
     </div>
   );
 }
 
-// Timeline skeleton
 export function TimelineSkeleton() {
   return (
-    <div className=\"space-y-4\" data-testid=\"skeleton-timeline\">
-      {Array.from({ length: 3 }).map((_, index) => (
+    <div className="space-y-4" data-testid="skeleton-timeline">
+      {[...Array(3)].map((_, index) => (
         <Card key={index}>
-          <CardContent className=\"p-4\">
-            <div className=\"flex items-start space-x-3\">
-              <Skeleton className=\"w-8 h-8 rounded-full\" />
-              <div className=\"flex-1 space-y-2\">
-                <Skeleton className=\"h-4 w-1/3\" />
-                <Skeleton className=\"h-4 w-full\" />
-                <Skeleton className=\"h-4 w-2/3\" />
+          <CardContent className="p-4">
+            <div className="flex items-start space-x-3">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-full" />
               </div>
-              <Skeleton className=\"w-16 h-6\" />
+              <Skeleton className="w-16 h-6" />
             </div>
           </CardContent>
         </Card>
@@ -130,190 +97,185 @@ export function TimelineSkeleton() {
   );
 }
 
-// AI generation loading
-interface AIGenerationLoadingProps {
-  type: 'event' | 'npc';
-  progress?: number;
+export function SessionBuilderSkeleton() {
+  return (
+    <div className="space-y-6" data-testid="skeleton-session-builder">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-24" />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...Array(4)].map((_, index) => (
+          <Card key={index}>
+            <CardContent className="p-4">
+              <Skeleton className="h-4 w-1/4 mb-2" />
+              <Skeleton className="h-6 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="flex justify-end">
+        <Skeleton className="h-10 w-32" />
+      </div>
+    </div>
+  );
 }
 
-export function AIGenerationLoading({ type, progress }: AIGenerationLoadingProps) {
-  const messages = {
-    event: [
-      'Analyzing session context...',
-      'Generating narrative elements...',
-      'Creating story connections...',
-      'Finalizing event details...'
-    ],
-    npc: [
-      'Designing character personality...',
-      'Determining motivations...',
-      'Generating backstory...',
-      'Adding finishing touches...'
-    ]
-  };
-
-  const currentStep = progress ? Math.floor(progress * messages[type].length) : 0;
-  const currentMessage = messages[type][Math.min(currentStep, messages[type].length - 1)];
-
+export function ScenarioListSkeleton() {
   return (
-    <div className=\"text-center space-y-4 p-6\" data-testid={`loading-ai-${type}`}>
-      <div className=\"relative\">
-        <Spinner size=\"lg\" className=\"mx-auto\" />
-        {progress !== undefined && (
-          <div className=\"absolute -bottom-2 left-1/2 transform -translate-x-1/2\">
-            <div className=\"w-16 h-1 bg-muted rounded-full overflow-hidden\">
-              <div 
-                className=\"h-full bg-primary transition-all duration-300 ease-out\"
-                style={{ width: `${progress * 100}%` }}
-              />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="skeleton-scenario-list">
+      {[...Array(6)].map((_, index) => (
+        <Card key={index}>
+          <CardContent className="p-6">
+            <Skeleton className="h-6 w-3/4 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-2/3 mb-4" />
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-8 w-16" />
             </div>
-          </div>
-        )}
-      </div>
-      <div className=\"space-y-2\">
-        <h3 className=\"font-semibold\">Generating {type === 'event' ? 'Event' : 'NPC'}</h3>
-        <p className=\"text-sm text-muted-foreground\">{currentMessage}</p>
-      </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
 
-// Error state with retry
-interface ErrorStateProps {
-  title?: string;
-  message?: string;
-  onRetry?: () => void;
-  retryLabel?: string;
-  showRetry?: boolean;
-}
-
-export function ErrorState({ 
-  title = 'Something went wrong',
-  message = 'An error occurred while loading this content.',
-  onRetry,
-  retryLabel = 'Try Again',
-  showRetry = true
-}: ErrorStateProps) {
-  return (
-    <div className=\"text-center space-y-4 p-6\" data-testid=\"error-state\">
-      <div className=\"mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center\">
-        <AlertCircle className=\"w-6 h-6 text-destructive\" />
-      </div>
-      <div className=\"space-y-2\">
-        <h3 className=\"font-semibold text-destructive\">{title}</h3>
-        <p className=\"text-sm text-muted-foreground\">{message}</p>
-      </div>
-      {showRetry && onRetry && (
-        <Button 
-          variant=\"outline\" 
-          onClick={onRetry}
-          data-testid=\"button-retry\"
-        >
-          <RefreshCw className=\"w-4 h-4 mr-2\" />
-          {retryLabel}
-        </Button>
-      )}
-    </div>
-  );
-}
-
-// Empty state
 interface EmptyStateProps {
+  icon?: React.ReactNode;
   title: string;
   description?: string;
   action?: {
     label: string;
     onClick: () => void;
   };
-  icon?: React.ReactNode;
+  testId?: string;
 }
 
-export function EmptyState({ title, description, action, icon }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, testId = 'empty-state' }: EmptyStateProps) {
   return (
-    <div className=\"text-center space-y-4 p-6\" data-testid=\"empty-state\">
-      {icon && (
-        <div className=\"mx-auto w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center\">
-          {icon}
-        </div>
+    <div className="flex flex-col items-center justify-center py-12 text-center" data-testid={testId}>
+      {icon && <div className="mb-4 text-muted-foreground">{icon}</div>}
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      {description && (
+        <p className="text-muted-foreground mb-4 max-w-sm">{description}</p>
       )}
-      <div className=\"space-y-2\">
-        <h3 className=\"font-semibold\">{title}</h3>
-        {description && (
-          <p className=\"text-sm text-muted-foreground\">{description}</p>
-        )}
-      </div>
       {action && (
-        <Button onClick={action.onClick} data-testid=\"button-action\">
+        <LoadingButton onClick={action.onClick} testId="button-empty-state-action">
           {action.label}
-        </Button>
+        </LoadingButton>
       )}
     </div>
   );
 }
 
-// Progressive loading for large lists
-interface ProgressiveListProps {
-  items: any[];
-  renderItem: (item: any, index: number) => React.ReactNode;
-  loading: boolean;
-  loadMore?: () => void;
-  hasMore?: boolean;
-  loadingMore?: boolean;
-  batchSize?: number;
+interface ErrorStateProps {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+  testId?: string;
 }
 
-export function ProgressiveList({
-  items,
-  renderItem,
-  loading,
-  loadMore,
-  hasMore = false,
-  loadingMore = false,
-  batchSize = 10
-}: ProgressiveListProps) {
-  const [visibleCount, setVisibleCount] = React.useState(batchSize);
-
-  React.useEffect(() => {
-    if (items.length > 0 && visibleCount < items.length) {
-      const timer = setTimeout(() => {
-        setVisibleCount(prev => Math.min(prev + batchSize, items.length));
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [items.length, visibleCount, batchSize]);
-
-  if (loading && items.length === 0) {
-    return (
-      <div className=\"space-y-4\">
-        {Array.from({ length: batchSize }).map((_, index) => (
-          <SessionCardSkeleton key={index} />
-        ))}
+export function ErrorState({ 
+  title = "Something went wrong",
+  description = "We encountered an error. Please try again.",
+  onRetry,
+  testId = "error-state"
+}: ErrorStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center" data-testid={testId}>
+      <div className="text-destructive mb-4">
+        <RefreshCw className="w-12 h-12" />
       </div>
-    );
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-muted-foreground mb-4 max-w-sm">{description}</p>
+      {onRetry && (
+        <LoadingButton onClick={onRetry} variant="outline" testId="button-retry">
+          Try Again
+        </LoadingButton>
+      )}
+    </div>
+  );
+}
+
+interface ProgressLoadingProps {
+  progress: number; // 0-100
+  text?: string;
+  testId?: string;
+}
+
+export function ProgressLoading({ progress, text, testId = "progress-loading" }: ProgressLoadingProps) {
+  return (
+    <div className="flex flex-col items-center gap-4 p-8" data-testid={testId}>
+      <div className="w-full max-w-sm">
+        <div className="bg-muted rounded-full h-2 mb-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>0%</span>
+          <span>{Math.round(progress)}%</span>
+          <span>100%</span>
+        </div>
+      </div>
+      {text && <p className="text-sm text-muted-foreground text-center">{text}</p>}
+    </div>
+  );
+}
+
+interface InfiniteScrollLoaderProps {
+  hasMore: boolean;
+  isLoading: boolean;
+  onLoadMore: () => void;
+  testId?: string;
+}
+
+export function InfiniteScrollLoader({ hasMore, isLoading, onLoadMore, testId = "infinite-scroll-loader" }: InfiniteScrollLoaderProps) {
+  if (!hasMore && !isLoading) return null;
+
+  return (
+    <div className="flex justify-center py-8" data-testid={testId}>
+      {isLoading ? (
+        <LoadingSpinner text="Loading more..." />
+      ) : (
+        <LoadingButton
+          onClick={onLoadMore}
+          variant="outline"
+          testId="button-load-more"
+        >
+          Load More
+        </LoadingButton>
+      )}
+    </div>
+  );
+}
+
+interface ComponentLoadingProps {
+  children: React.ReactNode;
+  isLoading: boolean;
+  skeleton?: React.ReactNode;
+  error?: string | null;
+  onRetry?: () => void;
+}
+
+export function ComponentLoading({ 
+  children, 
+  isLoading, 
+  skeleton,
+  error,
+  onRetry 
+}: ComponentLoadingProps) {
+  if (error) {
+    return <ErrorState description={error} onRetry={onRetry} />;
   }
 
-  return (
-    <div className=\"space-y-4\" data-testid=\"progressive-list\">
-      {items.slice(0, visibleCount).map(renderItem)}
-      
-      {visibleCount < items.length && (
-        <div className=\"text-center py-4\">
-          <Spinner size=\"sm\" />
-        </div>
-      )}
-      
-      {hasMore && loadMore && (
-        <div className=\"text-center py-4\">
-          <LoadingButton
-            loading={loadingMore}
-            onClick={loadMore}
-            variant=\"outline\"
-            testId=\"button-load-more\"
-          >
-            Load More
-          </LoadingButton>
-        </div>
-      )}
-    </div>
-  );
+  if (isLoading) {
+    return skeleton ? <>{skeleton}</> : <LoadingSpinner />;
+  }
+
+  return <>{children}</>;
 }
