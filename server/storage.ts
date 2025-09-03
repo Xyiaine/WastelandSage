@@ -288,16 +288,16 @@ export class MemStorage implements IStorage {
   private initializeDefaultContent(): void {
     const defaultScenarioId = '550e8400-e29b-41d4-a716-446655440000'; // Fixed UUID for default scenario
 
-    // Create the default scenario
+    // Initialize default scenario with Mediterranean Basin theme
     const defaultScenario: Scenario = {
       id: defaultScenarioId,
       userId: 'demo-user',
-      title: 'Legacy of the Two Braziers - Mediterranean Basin',
-      mainIdea: 'A campaign set in the post-apocalyptic Mediterranean Basin where 10 powerful city-states control vital resources after two devastating nuclear wars. Players navigate the delicate balance of power, survival, and intrigue in a world shaped by scarcity and diesel-powered machines.',
-      worldContext: 'The year is 2200. Two nuclear wars (2050 and 2100) have transformed the Mediterranean Basin into a harsh wasteland where survival depends on the fragile alliances between city-states. Each city controls a vital resource, creating a precarious balance of power where one misstep could trigger a third world war.',
-      politicalSituation: 'The 10 city-states exist in constant tension: Medical City heals but depends on others for fuel; Fuel City controls transport but produces unstable products; Industrial City builds everything but needs resources; Water & Food City feeds everyone but faces constant threats; Entertainment City influences minds but survives on others charity; Nuke City glows with power but spreads fear; Recycling City salvages the past but suffers radiation; Military City dominates by force but lacks materials; The Ancient Isle may be paradise or myth; Omega Bunker manipulates from shadows.',
-      keyThemes: ['survival', 'political_intrigue', 'resource_scarcity', 'technology_worship', 'faction_conflict'],
-      status: 'active',
+      title: 'Legacy of the Two Braziers',
+      mainIdea: 'Mediterranean Basin, 2200 AD. Ten city-states control specialized resources in a fragile post-nuclear world. The "Balance of Necessity" treaty prevents total war, but secret alliances, resource blackmail, and territorial disputes threaten to shatter 50 years of uneasy peace. Ancient nuclear powers hold the ultimate deterrent while new factions plot in the shadows.',
+      worldContext: 'After the Great Nuclear Wars of 2050-2080, the Mediterranean became the last bastion of organized civilization. The Treaty of the Two Braziers (2150 AD) established the current balance: each city-state controls one vital resource, making total war economically suicidal. However, climate shifts, resource depletion, and generational change strain this system. The recent discovery of pre-war technology caches threatens to upset the balance entirely.',
+      politicalSituation: 'CURRENT CRISIS: The "Water Wars" begin as the Guardians of the Source face internal rebellion while three city-states secretly negotiate alternative water sources. The Life Alliance (Medical+Agricultural) pressures smaller states while the Industrial Axis (Steel Forges+Nuclear Reactor) builds autonomous weapons. The Entertainment Coalition spreads propaganda while Information Brokers sell secrets to all sides. Two assassination attempts on faction leaders in the past month signal the end of diplomatic solutions.',
+      keyThemes: ['fragile peace', 'resource warfare', 'political assassination', 'secret alliances', 'technological arms race', 'economic warfare', 'succession crises', 'territorial expansion'],
+      status: 'active' as const,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -315,13 +315,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité Médicale',
         type: 'city' as const,
-        description: '« Les Blouses Blanches » - Spécialité : médicaments, chirurgie, prothèses, vaccins. Indispensable pour soigner blessures, maladies et radiations. Dirigée par un conseil de docteurs et apothicaires autoritaires.',
+        description: '« Les Blouses Blanches » - POLITICAL CRISIS: Internal power struggle between Director Vasquez (pro-isolation) and Chief Surgeon Romano (aggressive expansion). Recent epidemic in Salvage City blamed on their "medical rationing" policy. Secret negotiations with Nuclear City for advanced medical tech threaten Life Alliance. Medical blackmail used against enemies - withholding treatment for political gain. Heavily fortified hospitals hide weapon research.',
         controllingFaction: 'Les Blouses Blanches',
-        population: 15000,
-        resources: ['medicine', 'technology'],
-        threatLevel: 2,
-        politicalStance: 'neutral' as const,
-        tradeRoutes: null,
+        population: 35000,
+        resources: ['medicine', 'medical technology', 'pharmaceuticals', 'biological weapons'],
+        threatLevel: 3,
+        politicalStance: 'allied' as const,
+        tradeRoutes: ['Emergency medical corridors', 'Pharmaceutical smuggling routes'],
         createdAt: new Date()
       },
       {
@@ -329,13 +329,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité du Carburant',
         type: 'settlement' as const,
-        description: '« Les Raffineurs » - Spécialité : mazout, carburant synthétique, huiles. Contrôle les convois motorisés. Leurs raffineries sont aussi des forteresses mobiles. Carburant instable, parfois explosif.',
+        description: '« Les Raffineurs » - SECURITY ALERT: Frequent pirate raids targeting fuel convoys. Rumors of "Fuel City" supplying refined petroleum to rogue factions. Internal sabotage suspected after refinery explosion last month. Strict rationing imposed on non-allied states, fueling resentment. Mobility units are heavily armed but stretched thin.',
         controllingFaction: 'Les Raffineurs',
         population: 12000,
         resources: ['fuel', 'technology'],
         threatLevel: 3,
         politicalStance: 'hostile' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Armored fuel convoys', 'Smuggled fuel pipelines'],
         createdAt: new Date()
       },
       {
@@ -343,13 +343,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité Industrielle',
         type: 'settlement' as const,
-        description: '« Les Forgerons d\'Acier » - Spécialité : machines, pièces détachées, mécanique lourde. Maîtrise la production de véhicules et générateurs. Usines colossales, villes entières noyées dans la fumée.',
+        description: '« Les Forgerons d\'Acier » - TECHNOLOGICAL ARMS RACE: Developing advanced autonomous drones and weapons. Considers the Treaty of Two Braziers obsolete. Clashes with Military City over resource acquisition for war machine production. Internal guilds vie for control of advanced AI research. Preparing for potential preemptive strike against rival industrial powers.',
         controllingFaction: 'Les Forgerons d\'Acier',
         population: 25000,
-        resources: ['metal', 'technology', 'machinery'],
-        threatLevel: 2,
+        resources: ['metal', 'technology', 'machinery', 'weapons manufacturing'],
+        threatLevel: 4,
         politicalStance: 'neutral' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Component supply lines', 'Weapons export routes'],
         createdAt: new Date()
       },
       {
@@ -357,13 +357,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité de l\'Eau & Alimentation',
         type: 'fortress' as const,
-        description: '« Les Gardiens de la Source » - Spécialité : serres blindées, puits, élevages, semences rares. Nourriture et eau = pouvoir vital. Fortifications autour de vastes réservoirs souterrains. Cible de toutes les convoitises.',
+        description: '« Les Gardiens de la Source » - INTERNAL REBELLION: Facing widespread discontent due to water rationing and perceived favoritism towards allied states. Rebel factions, "The Thirsty" and "Seed of Doubt," actively sabotage water purification and distribution. The ruling council is divided on how to quell the unrest, with hardliners advocating for military action.',
         controllingFaction: 'Les Gardiens de la Source',
         population: 18000,
-        resources: ['food', 'water', 'seeds'],
+        resources: ['food', 'water', 'seeds', 'agricultural technology'],
         threatLevel: 4,
         politicalStance: 'friendly' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Vital water caravans', 'Food distribution networks'],
         createdAt: new Date()
       },
       {
@@ -371,13 +371,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité du Divertissement',
         type: 'trade_hub' as const,
-        description: '« Les Faiseurs de Rêves » - Spécialité : arènes, spectacles, cinéma, propagande. Influence culturelle et morale énorme. Connue pour ses radios et journaux de masse. Dépend des autres pour survivre matériellement.',
+        description: '« Les Faiseurs de Rêves » - PROPAGANDA WARFARE: Broadcasting heavily biased news and entertainment to influence public opinion across the basin. Accused of fabricating reports of atrocities by rival states. Operatives sow discord through underground media networks. The ruling council is secretly funded by multiple factions seeking to control the narrative.',
         controllingFaction: 'Les Faiseurs de Rêves',
         population: 20000,
-        resources: ['information', 'entertainment', 'propaganda'],
+        resources: ['information', 'entertainment', 'propaganda', 'espionage'],
         threatLevel: 1,
         politicalStance: 'neutral' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Information smuggling', 'Cultural exchange (controlled)'],
         createdAt: new Date()
       },
       {
@@ -385,13 +385,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Nuke City',
         type: 'city' as const,
-        description: '« Le Réacteur à Ciel Ouvert » - Unique cité nucléaire de surface. Énergie colossale, défenses électrifiées, armes avancées. Ville lumineuse dans le désert, crainte de tous. Rayonnements, accidents et paranoïa des habitants.',
+        description: '« Le Réacteur à Ciel Ouvert » - NUCLEAR DETERRENCE: Possesses the last functional nuclear arsenal. Maintains strict isolation, but its energy output is crucial for several city-states. Intelligence suggests secret development of advanced radiation weaponry. Political climate is paranoid, with constant purges of perceived internal threats. Openly hostile to all external contact.',
         controllingFaction: 'Le Réacteur à Ciel Ouvert',
         population: 8000,
-        resources: ['energy', 'technology', 'weapons'],
+        resources: ['energy', 'technology', 'weapons', 'nuclear materials'],
         threatLevel: 5,
         politicalStance: 'hostile' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Restricted energy conduits', 'Black market tech sales'],
         createdAt: new Date()
       },
       {
@@ -399,13 +399,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité des Métaux & Recyclage',
         type: 'settlement' as const,
-        description: '« Les Fossoyeurs » - Spécialité : récupération dans les ruines, fonderies, mines. Fournit tous les métaux et alliages rares. Cité construite dans un cimetière de gratte-ciels effondrés. Habitants exposés à radiations et maladies.',
+        description: '« Les Fossoyeurs » - RESOURCE DEPENDENCY: Crucial supplier of metals and salvage, but relies heavily on Fuel City for energy and Medical City for radiation treatments. Facing increased radiation sickness among workers due to unsafe salvage sites. Exploited by larger powers for raw materials, leading to internal calls for greater autonomy.',
         controllingFaction: 'Les Fossoyeurs',
         population: 10000,
-        resources: ['metal', 'rare_materials', 'salvage'],
+        resources: ['metal', 'rare_materials', 'salvage', 'radiation shielding'],
         threatLevel: 3,
         politicalStance: 'neutral' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Scrap metal shipments', 'Salvaged technology exchange'],
         createdAt: new Date()
       },
       {
@@ -413,13 +413,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Cité de l\'Armement & Défense',
         type: 'fortress' as const,
-        description: '« Les Arsenaux » - Spécialité : armes à feu, explosifs, blindages, véhicules de guerre. Puissance militaire écrasante. La cité est un gigantesque complexe militaire. Trop dépendante de matières premières.',
+        description: '« Les Arsenaux » - MILITARY HEGEMONY & DEBT: Dominates regional security through its powerful military, but is heavily indebted to Industrial City for advanced components. Facing pressure to deploy forces in the escalating "Water Wars." Internal factions debate whether to remain loyal to the Life Alliance or seek new patrons.',
         controllingFaction: 'Les Arsenaux',
         population: 22000,
-        resources: ['weapons', 'explosives', 'armor'],
+        resources: ['weapons', 'explosives', 'armor', 'military hardware'],
         threatLevel: 5,
         politicalStance: 'hostile' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Arms shipments', 'Mercenary recruitment'],
         createdAt: new Date()
       },
       {
@@ -427,13 +427,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'L\'Île des Anciens',
         type: 'city' as const,
-        description: '« Le Paradis Perdu » - Technologie pré-apocalyptique intacte, agriculture abondante. Autosuffisante, riche, civilisée. Isolée, difficile à atteindre. Certains doutent même qu\'elle existe vraiment.',
+        description: '« Le Paradis Perdu » - ISOLATIONIST MYSTERY: Highly advanced, self-sufficient, and enigmatic. Rarely interacts with other city-states. Rumored to possess pre-war technology far beyond current understanding. Attempts to establish contact by other factions are met with automated defenses or complete silence. Internal politics are unknown, fueling speculation and desire to breach their isolation.',
         controllingFaction: 'Le Paradis Perdu',
         population: 5000,
-        resources: ['pre_war_tech', 'abundant_food', 'clean_water'],
+        resources: ['pre_war_tech', 'abundant_food', 'clean_water', 'advanced AI'],
         threatLevel: 1,
         politicalStance: 'neutral' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Rumored hyperspace routes', 'Sealed diplomatic channels'],
         createdAt: new Date()
       },
       {
@@ -441,13 +441,13 @@ export class MemStorage implements IStorage {
         scenarioId: defaultScenarioId,
         name: 'Bunker Oméga',
         type: 'fortress' as const,
-        description: '« Les Fantômes d\'Acier » - Cité souterraine ultra-avancée, énergie nucléaire. Technologie la plus avancée du monde (armes, drones, IA rudimentaires). N\'intervient pas officiellement, mais manipule la surface via espions et agents secrets.',
+        description: '« Les Fantômes d\'Acier » - SHADOW WARFARE & MANIPULATION: Operates from subterranean bases, wielding advanced surveillance and cyber warfare capabilities. Secretly influences surface politics through disinformation campaigns and assassination contracts. Holds vast archives of pre-war data and AI. Primary goal: consolidating power and achieving technological singularity, regardless of the cost to the surface world.',
         controllingFaction: 'Les Fantômes d\'Acier',
         population: 3000,
-        resources: ['advanced_tech', 'ai', 'espionage'],
+        resources: ['advanced_tech', 'ai', 'espionage', 'cyber warfare'],
         threatLevel: 5,
         politicalStance: 'hostile' as const,
-        tradeRoutes: null,
+        tradeRoutes: ['Encrypted data streams', 'Covert agent networks'],
         createdAt: new Date()
       }
     ];
@@ -1244,13 +1244,12 @@ export class MemStorage implements IStorage {
         throw new NotFoundError('Timeline event', id);
       }
 
-      this.timelineEvents.delete(id);
-
       // Invalidate cache for session timeline if session ID is present
       if (event.sessionId) {
         this.cache.delete(`sessionTimeline:${event.sessionId}`);
       }
 
+      this.timelineEvents.delete(id);
       console.log(`[MemStorage] Deleted timeline event: ${event.name} (${id})`);
     } catch (error) {
       console.error(`[MemStorage] Error deleting timeline event '${id}':`, error);

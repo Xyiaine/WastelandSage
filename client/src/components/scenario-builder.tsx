@@ -1121,9 +1121,10 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-7 bg-slate-700">
+                    <TabsList className="grid w-full grid-cols-8 bg-slate-700">
                       <TabsTrigger value="overview" className="text-white">{t('tabs.overview')}</TabsTrigger>
                       <TabsTrigger value="regions" className="text-white">{t('tabs.regions')} ({regions.length})</TabsTrigger>
+                      <TabsTrigger value="politics" className="text-white">Politics & Conflicts</TabsTrigger>
                       <TabsTrigger value="quests" className="text-white">{t('tabs.quests')} ({quests.length})</TabsTrigger>
                       <TabsTrigger value="environment" className="text-white">{t('tabs.environment')} ({environmentalConditions.length})</TabsTrigger>
                       <TabsTrigger value="connections" className="text-white">{t('tabs.connections')}</TabsTrigger>
@@ -1166,6 +1167,257 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="politics" className="mt-6">
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Crown className="h-5 w-5 text-red-400" />
+                            Political Situation & Active Conflicts
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-red-300 border-red-400">
+                              High Tension
+                            </Badge>
+                            <Badge variant="outline" className="text-yellow-300 border-yellow-400">
+                              {regions.filter(r => r.politicalStance === 'hostile').length} Hostile Factions
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Current Political Crisis */}
+                        {currentScenario.politicalSituation && (
+                          <Card className="bg-red-900/20 border-red-500/50">
+                            <CardHeader>
+                              <CardTitle className="text-red-300 flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5" />
+                                Current Crisis Status
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-red-100 whitespace-pre-wrap leading-relaxed">
+                                {currentScenario.politicalSituation}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Political Alliances Map */}
+                        <Card className="bg-slate-700/50 border-slate-600">
+                          <CardHeader>
+                            <CardTitle className="text-white flex items-center gap-2">
+                              <Users className="h-5 w-5 text-blue-400" />
+                              Faction Alliances & Rivalries
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-4">
+                              {/* Life Alliance */}
+                              <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                                <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
+                                  <Shield className="h-4 w-4" />
+                                  Life Alliance (Fragile)
+                                </h4>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  {regions.filter(r => 
+                                    r.name.includes('Médicale') || r.name.includes('Eau & Alimentation')
+                                  ).map(region => (
+                                    <Badge key={region.id} variant="outline" className="text-green-300 border-green-400">
+                                      {region.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                <p className="text-sm text-green-200">
+                                  UNDER STRAIN: Medical rationing policies and water monopoly disputes threaten unity. 
+                                  Secret negotiations with other factions detected.
+                                </p>
+                              </div>
+
+                              {/* Industrial Axis */}
+                              <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded-lg">
+                                <h4 className="font-semibold text-orange-300 mb-2 flex items-center gap-2">
+                                  <Zap className="h-4 w-4" />
+                                  Industrial Axis (Rising)
+                                </h4>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  {regions.filter(r => 
+                                    r.name.includes('Industrielle') || r.name.includes('Nuke City')
+                                  ).map(region => (
+                                    <Badge key={region.id} variant="outline" className="text-orange-300 border-orange-400">
+                                      {region.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                <p className="text-sm text-orange-200">
+                                  EXPANDING: Steel production + Nuclear power = military dominance. 
+                                  Plotting autonomous resource independence.
+                                </p>
+                              </div>
+
+                              {/* Neutral Powers */}
+                              <div className="p-4 bg-slate-700/30 border border-slate-500/30 rounded-lg">
+                                <h4 className="font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                                  <Target className="h-4 w-4" />
+                                  Neutral Powers (Opportunistic)
+                                </h4>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  {regions.filter(r => 
+                                    r.name.includes('Divertissement') || r.name.includes('Information')
+                                  ).map(region => (
+                                    <Badge key={region.id} variant="outline" className="text-slate-300 border-slate-400">
+                                      {region.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                <p className="text-sm text-slate-300">
+                                  PLAYING ALL SIDES: Entertainment spreads propaganda while Information brokers 
+                                  sell intelligence to highest bidders.
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Active Threats & Tensions */}
+                        <Card className="bg-slate-700/50 border-slate-600">
+                          <CardHeader>
+                            <CardTitle className="text-white flex items-center gap-2">
+                              <Skull className="h-5 w-5 text-red-400" />
+                              Active Threats & Flashpoints
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="p-3 bg-red-900/20 border-l-4 border-red-500 rounded">
+                                <h5 className="font-semibold text-red-300 mb-1">Water Wars Escalation</h5>
+                                <p className="text-sm text-red-200">
+                                  Three city-states discovered alternative water sources. Guardians of the Source 
+                                  face internal rebellion. Armed convoys reported near water facilities.
+                                </p>
+                              </div>
+                              
+                              <div className="p-3 bg-orange-900/20 border-l-4 border-orange-500 rounded">
+                                <h5 className="font-semibold text-orange-300 mb-1">Nuclear Ultimatum</h5>
+                                <p className="text-sm text-orange-200">
+                                  Nuke City activated "Doomsday Protocol" - dead man's switch threatens 
+                                  Mediterranean irradiation if city is attacked. Secret uranium sales detected.
+                                </p>
+                              </div>
+
+                              <div className="p-3 bg-yellow-900/20 border-l-4 border-yellow-500 rounded">
+                                <h5 className="font-semibold text-yellow-300 mb-1">Medical Blackmail Campaign</h5>
+                                <p className="text-sm text-yellow-200">
+                                  Medical City withholding treatments for political leverage. Epidemic in 
+                                  Salvage City blamed on rationing policies. Bio-weapon research suspected.
+                                </p>
+                              </div>
+
+                              <div className="p-3 bg-purple-900/20 border-l-4 border-purple-500 rounded">
+                                <h5 className="font-semibold text-purple-300 mb-1">Information Warfare</h5>
+                                <p className="text-sm text-purple-200">
+                                  Two faction leader assassinations this month. Double agents spreading 
+                                  dissent. Entertainment City propaganda campaign detected.
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Resource Control Matrix */}
+                        <Card className="bg-slate-700/50 border-slate-600">
+                          <CardHeader>
+                            <CardTitle className="text-white flex items-center gap-2">
+                              <Coins className="h-5 w-5 text-yellow-400" />
+                              Resource Dependencies & Leverage
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-slate-600">
+                                    <th className="text-left p-2 text-slate-300">Region</th>
+                                    <th className="text-left p-2 text-slate-300">Controls</th>
+                                    <th className="text-left p-2 text-slate-300">Depends On</th>
+                                    <th className="text-left p-2 text-slate-300">Leverage</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {regions.map(region => (
+                                    <tr key={region.id} className="border-b border-slate-700">
+                                      <td className="p-2 text-white font-medium">{region.name}</td>
+                                      <td className="p-2">
+                                        <div className="flex flex-wrap gap-1">
+                                          {region.resources?.map(resource => (
+                                            <Badge key={resource} variant="secondary" className="text-xs">
+                                              {resource}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </td>
+                                      <td className="p-2 text-slate-300 text-xs">
+                                        {region.threatLevel >= 4 ? 'Military protection' : 
+                                         region.name.includes('Nuke') ? 'Nothing (autonomous)' :
+                                         region.name.includes('Médicale') ? 'Food, materials' :
+                                         region.name.includes('Eau') ? 'Energy, weapons' :
+                                         'Water, medicine, energy'}
+                                      </td>
+                                      <td className="p-2">
+                                        <Badge 
+                                          variant={
+                                            region.name.includes('Eau') || region.name.includes('Médicale') ? 'destructive' :
+                                            region.name.includes('Nuke') ? 'destructive' : 'secondary'
+                                          }
+                                          className="text-xs"
+                                        >
+                                          {region.name.includes('Eau') ? 'Critical' :
+                                           region.name.includes('Médicale') ? 'High' :
+                                           region.name.includes('Nuke') ? 'Ultimate' : 'Moderate'}
+                                        </Badge>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* GM Quick Reference */}
+                        <Card className="bg-blue-900/20 border-blue-500/50">
+                          <CardHeader>
+                            <CardTitle className="text-blue-300 flex items-center gap-2">
+                              <FileText className="h-5 w-5" />
+                              GM Quick Reference
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h6 className="font-semibold text-blue-200 mb-2">Escalation Triggers</h6>
+                                <ul className="text-sm text-blue-100 space-y-1">
+                                  <li>• Water rationing protests</li>
+                                  <li>• Medical treatment denials</li>
+                                  <li>• Trade route sabotage</li>
+                                  <li>• Faction leader assassination</li>
+                                  <li>• Resource convoy attacks</li>
+                                </ul>
+                              </div>
+                              <div>
+                                <h6 className="font-semibold text-blue-200 mb-2">De-escalation Options</h6>
+                                <ul className="text-sm text-blue-100 space-y-1">
+                                  <li>• Emergency medical aid</li>
+                                  <li>• Resource sharing agreements</li>
+                                  <li>• Diplomatic marriages</li>
+                                  <li>• Technology exchanges</li>
+                                  <li>• Joint external threats</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
                     </TabsContent>
 
@@ -1222,6 +1474,25 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                                           <Users className="h-4 w-4 text-blue-400" />
                                           <span className="text-sm text-slate-300">{region.population.toLocaleString()}</span>
                                         </div>
+                                      )}
+                                      {/* Political Tension Indicator */}
+                                      {region.description && region.description.includes('CRISIS') && (
+                                        <Badge variant="destructive" className="text-xs animate-pulse">
+                                          <Crown className="h-3 w-3 mr-1" />
+                                          CRISIS
+                                        </Badge>
+                                      )}
+                                      {region.description && region.description.includes('UNDER SIEGE') && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          <Shield className="h-3 w-3 mr-1" />
+                                          SIEGE
+                                        </Badge>
+                                      )}
+                                      {region.description && region.description.includes('WILDCARD') && (
+                                        <Badge variant="outline" className="text-xs text-purple-300 border-purple-400">
+                                          <Zap className="h-3 w-3 mr-1" />
+                                          WILDCARD
+                                        </Badge>
                                       )}
                                       <Badge variant="outline" className="text-xs text-slate-300">
                                         {regionNpcs[region.id]?.length || 0} NPCs
