@@ -70,6 +70,7 @@ import { ImportExportControls } from './import-export-controls';
 import { CharacterManager } from './character-manager';
 import { PlayerManager } from './player-manager';
 import { MediterraneanMap } from './mediterranean-map';
+import { MapManager } from './map-manager';
 
 // Types for scenario management
 interface Scenario {
@@ -1425,7 +1426,7 @@ const ScenarioBuilder: React.FC = React.memo(() => {
 
                     <TabsContent value="map" className="mt-6">
                       <div className="h-[600px] bg-slate-800 rounded-lg border border-slate-700">
-                        <MediterraneanMap 
+                        <MapManager 
                           currentScenario={currentScenario}
                           regions={regions}
                           onRegionUpdate={(regionId) => {
@@ -1433,6 +1434,9 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                             if (currentScenario) {
                               fetchScenarioData(currentScenario.id);
                             }
+                          }}
+                          onRegionsChange={(newRegions) => {
+                            setRegions(newRegions);
                           }}
                         />
                       </div>
