@@ -69,6 +69,7 @@ import { InteractiveLibrary } from './interactive-library';
 import { ImportExportControls } from './import-export-controls';
 import { CharacterManager } from './character-manager';
 import { PlayerManager } from './player-manager';
+import { MediterraneanMap } from './mediterranean-map';
 
 // Types for scenario management
 interface Scenario {
@@ -1121,9 +1122,10 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-8 bg-slate-700">
+                    <TabsList className="grid w-full grid-cols-9 bg-slate-700">
                       <TabsTrigger value="overview" className="text-white">{t('tabs.overview')}</TabsTrigger>
                       <TabsTrigger value="regions" className="text-white">{t('tabs.regions')} ({regions.length})</TabsTrigger>
+                      <TabsTrigger value="map" className="text-white">Mediterranean Map</TabsTrigger>
                       <TabsTrigger value="politics" className="text-white">Politics & Conflicts</TabsTrigger>
                       <TabsTrigger value="quests" className="text-white">{t('tabs.quests')} ({quests.length})</TabsTrigger>
                       <TabsTrigger value="environment" className="text-white">{t('tabs.environment')} ({environmentalConditions.length})</TabsTrigger>
@@ -1418,6 +1420,21 @@ const ScenarioBuilder: React.FC = React.memo(() => {
                             </div>
                           </CardContent>
                         </Card>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="map" className="mt-6">
+                      <div className="h-[600px] bg-slate-800 rounded-lg border border-slate-700">
+                        <MediterraneanMap 
+                          currentScenario={currentScenario}
+                          regions={regions}
+                          onRegionUpdate={(regionId) => {
+                            // Optionally refresh region data when updated
+                            if (currentScenario) {
+                              fetchScenarioData(currentScenario.id);
+                            }
+                          }}
+                        />
                       </div>
                     </TabsContent>
 
