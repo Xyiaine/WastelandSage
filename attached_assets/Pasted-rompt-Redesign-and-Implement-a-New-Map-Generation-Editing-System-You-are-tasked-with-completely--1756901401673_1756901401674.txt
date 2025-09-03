@@ -1,0 +1,96 @@
+rompt: Redesign and Implement a New Map Generation & Editing System
+
+You are tasked with completely reworking the current map generation and edition system of the application. The new system must be robust, intuitive, and flexible, supporting both user-generated and AI-assisted map creation. The system should empower users to import, generate, edit, and manage maps and cities effectively.
+
+🔧 Your Objectives
+1. Comprehend the Existing System
+
+Review and analyze the current map generation and editing code.
+
+Identify its limitations, performance bottlenecks, and UX issues.
+
+2. Design & Implement the New Map System
+
+The new system must include the following core features:
+
+🗺️ Map Image Import & Generation
+
+Allow users to import a map image (e.g. PNG, JPG) which becomes the base of the map.
+
+Enable users to generate maps from an image, using image processing (e.g. color-based terrain detection, heightmap interpretation, etc.).
+
+Add ability to process map resolution and scale to match application logic.
+
+🏙️ City Placement & Editing
+
+Display existing cities on the map with markers.
+
+Allow user to:
+
+Move cities by dragging their location on the map.
+
+Add new cities by clicking or tapping.
+
+Remove existing cities by selecting them.
+
+Each city must be visually editable and interactable.
+
+🔗 City Metadata & Linkage
+
+Each city must be linked to a complete information object, including:
+
+Name, ID, region
+
+Population, economy, traits
+
+Custom flags or tags
+
+Provide UI to view and edit city information on selection.
+
+💡 Additional Critical Features
+
+Make sure to include and optimize the following key features for a professional-grade map system:
+
+Zoom & Pan Support – Smooth navigation on the map (desktop + mobile).
+
+Grid Overlay (optional) – Toggleable grid for easier city placement.
+
+Snapping & Auto-Alignment – Snap cities to grid or other cities/landmarks.
+
+Undo/Redo support for all actions (placement, delete, move).
+
+Save/Load Map State – Allow persistent saving and loading of maps and cities.
+
+Validation System – Prevent invalid operations (e.g. overlapping cities, placement on sea, etc.).
+
+Performance Optimization – Handle large maps and many cities without lag.
+
+Modular & Scalable Code – Separate concerns for rendering, data, and logic.
+
+🧪 Testing & Optimization
+
+After implementation:
+
+Test each feature thoroughly with edge cases.
+
+Measure and optimize performance (load time, render time, interaction latency).
+
+Provide a test harness or simulation environment if necessary.
+
+Ensure compatibility across major devices and browsers (if web-based).
+
+Use automated testing where applicable (e.g., Jest, Cypress, etc.)
+
+🧠 Final Requirements
+
+Your code must be:
+
+Modular
+
+Well-documented
+
+Easy to maintain and extend
+
+Summarize your approach and key design decisions.
+
+Ask clarifying questions before proceeding with implementation if anything is unclear.
