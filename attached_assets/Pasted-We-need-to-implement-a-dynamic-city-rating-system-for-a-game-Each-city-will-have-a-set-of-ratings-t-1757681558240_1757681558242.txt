@@ -1,0 +1,101 @@
+We need to implement a dynamic city rating system for a game. Each city will have a set of ratings that represent its "Development and Influence" levels. These ratings should be based on the resources, infrastructure, and conditions of the city, such as:
+
+Core Metrics:
+
+Food:
+
+Measures the city’s ability to feed its population and sustain itself. This includes agriculture, food supply chains, and trade.
+
+Wealth:
+
+Represents the economic health of the city, including trade, commerce, currency, and overall prosperity.
+
+Health:
+
+Indicates the well-being of the population, including public health infrastructure, sanitation, hospitals, and overall medical care.
+
+Industry:
+
+Reflects the level of industrial development in the city, including factories, production of goods, energy generation, and resource extraction. A city with high industry might have a stronger economy but more environmental risks.
+
+Security:
+
+Measures the safety of the city, including law enforcement, defense systems, and the stability of local governance. Cities with low security might be vulnerable to raids or internal corruption.
+
+Public Morale:
+
+Represents the general attitude of the population towards the city’s leadership and the quality of life. High morale can result in a thriving city, while low morale might lead to unrest or rebellion.
+
+Environment:
+
+Reflects the city's impact on its natural surroundings, including pollution, resource depletion, and ecological health. A city with a good environmental score may have clean air and water, while a polluted city could suffer long-term health problems.
+
+Key Features:
+
+City Rating Overview:
+
+When a player clicks on a city, they should see an overview of the city’s resource ratings (such as food, wealth, health, industry, security, morale, and environment). Each resource will have a number representing its current level.
+
+Interactive Quest System:
+
+When the player clicks on a specific rating (e.g., Health, Industry), they should be presented with a set of quests that can either:
+
+Improve that rating (e.g., “Secure an abandoned hospital to improve health” or "Rebuild a factory to increase industry").
+
+Decrease that rating (e.g., “Attack a convoy transporting medical supplies to the city” or “Sabotage an industrial plant to reduce industry”).
+
+Quest Categories:
+
+Quests should be contextual and relevant to the resource they affect. For example, if a city has a low "Food" rating, the player might be given a quest like "Raid a farm to steal supplies" (to decrease the rating) or "Secure trade routes with neighboring cities" (to increase food resources). Similarly, for "Security," quests could involve either defending the city or staging an attack.
+
+User Interface Design:
+
+Clicking on a city brings up its ratings, followed by a clickable resource number (e.g., Health, Wealth).
+
+Clicking on a resource number opens a tab or menu showing all the available quests related to improving or degrading that specific resource.
+
+Example:
+
+Click on City ("Nuke City"):
+
+Display:
+
+Health: 3/10
+
+Food: 6/10
+
+Wealth: 5/10
+
+Industry: 4/10
+
+Security: 7/10
+
+Public Morale: 2/10
+
+Environment: 3/10
+
+Click on "Health":
+
+Display a tab with two quest options:
+
+Improve Health: "Secure an abandoned hospital in the wasteland to improve health."
+
+Decrease Health: "Attack a convoy transporting medical supplies to the city."
+
+Click on "Industry":
+
+Display a tab with two quest options:
+
+Improve Industry: "Rebuild a factory to increase production and wealth."
+
+Decrease Industry: "Sabotage an industrial plant to weaken the city’s infrastructure."
+
+Click on "Public Morale":
+
+Display a tab with two quest options:
+
+Improve Morale: "Organize a public event to boost the people's spirits."
+
+Decrease Morale: "Spread propaganda to turn the people against the current leadership."
+
+This interactive system should allow players to strategically manage the development, influence, and conditions of the cities they interact with.
