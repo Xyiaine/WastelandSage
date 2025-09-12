@@ -1094,6 +1094,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
+   * SCENARIO QUEST MANAGEMENT ENDPOINTS
+   */
+
+  // Get quests for a scenario
+  app.get("/api/scenarios/:scenarioId/quests", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.scenarioId;
+
+    try {
+      const quests = await storage.getScenarioQuests(scenarioId);
+      logRequest('GET', `/api/scenarios/${scenarioId}/quests`, startTime, 200, `Retrieved ${quests.length} quests`);
+      res.json(quests);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/scenarios/${scenarioId}/quests`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create scenario quest
+  app.post("/api/scenario-quests", async (req, res) => {
+    const startTime = Date.now();
+
+    try {
+      const data = insertScenarioQuestSchema.parse(req.body);
+      const quest = await storage.createScenarioQuest(data);
+      logRequest('POST', '/api/scenario-quests', startTime, 201, `Created quest: ${quest.title}`);
+      res.status(201).json(quest);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('POST', '/api/scenario-quests', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
+   * ENVIRONMENTAL CONDITION MANAGEMENT ENDPOINTS
+   */
+
+  // Get environmental conditions for a scenario
+  app.get("/api/scenarios/:scenarioId/environmental-conditions", async (req, res) => {
+    const startTime = Date.now();
+    const scenarioId = req.params.scenarioId;
+
+    try {
+      const conditions = await storage.getScenarioConditions(scenarioId);
+      logRequest('GET', `/api/scenarios/${scenarioId}/environmental-conditions`, startTime, 200, `Retrieved ${conditions.length} conditions`);
+      res.json(conditions);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('GET', `/api/scenarios/${scenarioId}/environmental-conditions`, startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  // Create environmental condition
+  app.post("/api/environmental-conditions", async (req, res) => {
+    const startTime = Date.now();
+
+    try {
+      const data = insertEnvironmentalConditionSchema.parse(req.body);
+      const condition = await storage.createEnvironmentalCondition(data);
+      logRequest('POST', '/api/environmental-conditions', startTime, 201, `Created condition: ${condition.name}`);
+      res.status(201).json(condition);
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error as Error);
+      const errorResponse = formatErrorResponse(error as Error);
+      logRequest('POST', '/api/environmental-conditions', startTime, statusCode, `Error: ${errorResponse.error}`);
+      res.status(statusCode).json(errorResponse);
+    }
+  });
+
+  /**
    * PLAYER CHARACTER MANAGEMENT ENDPOINTS
    */
 
@@ -1341,6 +1417,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('  - DELETE /api/scenario-npcs/:id');
   console.log('  - PATCH  /api/scenario-npcs/:id/suppress');
   console.log('  - PATCH  /api/scenario-npcs/:id/restore');
+  console.log('  - GET    /api/scenarios/:scenarioId/quests');
+  console.log('  - POST   /api/scenario-quests');
+  console.log('  - GET    /api/scenarios/:scenarioId/environmental-conditions');
+  console.log('  - POST   /api/environmental-conditions');
   console.log('  - GET    /api/users/:userId/characters');
   console.log('  - GET    /api/sessions/:sessionId/characters');
   console.log('  - POST   /api/characters');
