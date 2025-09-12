@@ -26,6 +26,28 @@ import {
 } from 'lucide-react';
 
 // Types for the map system
+interface CityRatings {
+  food: number;        // 0-10: City's ability to feed population
+  wealth: number;      // 0-10: Economic health and prosperity
+  health: number;      // 0-10: Medical care and population well-being
+  industry: number;    // 0-10: Industrial development and production
+  security: number;    // 0-10: Safety, law enforcement, and stability
+  morale: number;      // 0-10: Population satisfaction and loyalty
+  environment: number; // 0-10: Environmental health and sustainability
+}
+
+interface CityQuest {
+  id: string;
+  title: string;
+  description: string;
+  type: 'improve' | 'decrease';
+  rating: keyof CityRatings;
+  impact: number; // How much the rating changes (+/- 1-3)
+  difficulty: 'easy' | 'medium' | 'hard';
+  requirements?: string[];
+  rewards?: string[];
+}
+
 interface CityData {
   id: string;
   name: string;
@@ -38,6 +60,8 @@ interface CityData {
   threatLevel: number;
   politicalStance?: 'hostile' | 'neutral' | 'friendly' | 'allied';
   description?: string;
+  ratings: CityRatings;
+  completedQuests?: string[];
   metadata?: Record<string, any>;
 }
 
@@ -82,6 +106,302 @@ const POLITICAL_STANCES = [
   { value: 'allied', label: 'Allied', color: '#3B82F6' }
 ];
 
+// City Rating System Configuration
+const RATING_CATEGORIES = [
+  { 
+    key: 'food' as keyof CityRatings, 
+    label: 'Food', 
+    icon: '🍞', 
+    color: '#10B981',
+    description: 'Agricultural capacity and food security'
+  },
+  { 
+    key: 'wealth' as keyof CityRatings, 
+    label: 'Wealth', 
+    icon: '💰', 
+    color: '#F59E0B',
+    description: 'Economic prosperity and trade'
+  },
+  { 
+    key: 'health' as keyof CityRatings, 
+    label: 'Health', 
+    icon: '❤️', 
+    color: '#EF4444',
+    description: 'Medical infrastructure and population wellness'
+  },
+  { 
+    key: 'industry' as keyof CityRatings, 
+    label: 'Industry', 
+    icon: '🏭', 
+    color: '#6B7280',
+    description: 'Manufacturing and production capabilities'
+  },
+  { 
+    key: 'security' as keyof CityRatings, 
+    label: 'Security', 
+    icon: '🛡️', 
+    color: '#3B82F6',
+    description: 'Defense, law enforcement, and stability'
+  },
+  { 
+    key: 'morale' as keyof CityRatings, 
+    label: 'Morale', 
+    icon: '😊', 
+    color: '#8B5CF6',
+    description: 'Population satisfaction and loyalty'
+  },
+  { 
+    key: 'environment' as keyof CityRatings, 
+    label: 'Environment', 
+    icon: '🌿', 
+    color: '#059669',
+    description: 'Ecological health and sustainability'
+  }
+];
+
+// Quest Templates for different ratings
+const QUEST_TEMPLATES: Record<keyof CityRatings, CityQuest[]> = {
+  food: [
+    {
+      id: 'secure-farm',
+      title: 'Secure Abandoned Farmland',
+      description: 'Explore and reclaim fertile farmland to boost food production.',
+      type: 'improve',
+      rating: 'food',
+      impact: 2,
+      difficulty: 'medium',
+      requirements: ['Security forces', 'Agricultural equipment'],
+      rewards: ['Increased food production', 'Trade opportunities']
+    },
+    {
+      id: 'raid-convoy',
+      title: 'Raid Food Convoy',
+      description: 'Intercept a supply convoy to steal food resources.',
+      type: 'decrease',
+      rating: 'food',
+      impact: -1,
+      difficulty: 'easy',
+      requirements: ['Armed forces'],
+      rewards: ['Immediate food supplies', 'Enemy intelligence']
+    },
+    {
+      id: 'establish-trade',
+      title: 'Establish Trade Routes',
+      description: 'Negotiate safe passage for food caravans with neighboring settlements.',
+      type: 'improve',
+      rating: 'food',
+      impact: 1,
+      difficulty: 'hard',
+      requirements: ['Diplomatic relations', 'Security guarantees'],
+      rewards: ['Stable food supply', 'Economic growth']
+    }
+  ],
+  wealth: [
+    {
+      id: 'rebuild-market',
+      title: 'Rebuild Trading Post',
+      description: 'Restore the central marketplace to attract merchants and traders.',
+      type: 'improve',
+      rating: 'wealth',
+      impact: 2,
+      difficulty: 'medium',
+      requirements: ['Construction materials', 'Skilled workers'],
+      rewards: ['Increased commerce', 'Tax revenue']
+    },
+    {
+      id: 'sabotage-bank',
+      title: 'Sabotage Financial Center',
+      description: 'Disrupt the city\'s economic infrastructure to weaken their wealth.',
+      type: 'decrease',
+      rating: 'wealth',
+      impact: -2,
+      difficulty: 'hard',
+      requirements: ['Infiltration team', 'Inside information'],
+      rewards: ['Economic disruption', 'Strategic advantage']
+    }
+  ],
+  health: [
+    {
+      id: 'secure-hospital',
+      title: 'Secure Abandoned Hospital',
+      description: 'Reclaim and restore a pre-war medical facility.',
+      type: 'improve',
+      rating: 'health',
+      impact: 3,
+      difficulty: 'hard',
+      requirements: ['Medical supplies', 'Trained personnel', 'Power source'],
+      rewards: ['Improved healthcare', 'Population growth']
+    },
+    {
+      id: 'poison-water',
+      title: 'Contaminate Water Supply',
+      description: 'Introduce toxins into the city\'s water system.',
+      type: 'decrease',
+      rating: 'health',
+      impact: -3,
+      difficulty: 'medium',
+      requirements: ['Chemical knowledge', 'Access to water infrastructure'],
+      rewards: ['Weakened population', 'Reduced resistance']
+    },
+    {
+      id: 'medical-convoy',
+      title: 'Escort Medical Convoy',
+      description: 'Protect a shipment of vital medical supplies and vaccines.',
+      type: 'improve',
+      rating: 'health',
+      impact: 1,
+      difficulty: 'easy',
+      requirements: ['Armed escort', 'Transportation'],
+      rewards: ['Community trust', 'Medical stockpile']
+    }
+  ],
+  industry: [
+    {
+      id: 'rebuild-factory',
+      title: 'Rebuild Production Facility',
+      description: 'Restore an abandoned factory to boost manufacturing capacity.',
+      type: 'improve',
+      rating: 'industry',
+      impact: 2,
+      difficulty: 'hard',
+      requirements: ['Raw materials', 'Technical expertise', 'Power grid'],
+      rewards: ['Increased production', 'Job creation']
+    },
+    {
+      id: 'sabotage-plant',
+      title: 'Sabotage Industrial Plant',
+      description: 'Disable key machinery to cripple the city\'s industrial output.',
+      type: 'decrease',
+      rating: 'industry',
+      impact: -2,
+      difficulty: 'medium',
+      requirements: ['Explosives', 'Technical knowledge'],
+      rewards: ['Strategic disadvantage for enemy', 'Resource disruption']
+    }
+  ],
+  security: [
+    {
+      id: 'train-militia',
+      title: 'Train Civilian Militia',
+      description: 'Organize and train citizens to defend their community.',
+      type: 'improve',
+      rating: 'security',
+      impact: 2,
+      difficulty: 'medium',
+      requirements: ['Weapons', 'Training facilities', 'Leadership'],
+      rewards: ['Enhanced defense', 'Community cohesion']
+    },
+    {
+      id: 'infiltrate-guards',
+      title: 'Infiltrate Security Forces',
+      description: 'Plant spies within the city\'s security apparatus.',
+      type: 'decrease',
+      rating: 'security',
+      impact: -2,
+      difficulty: 'hard',
+      requirements: ['Skilled operatives', 'Long-term planning'],
+      rewards: ['Inside intelligence', 'Security vulnerabilities']
+    }
+  ],
+  morale: [
+    {
+      id: 'public-festival',
+      title: 'Organize Public Festival',
+      description: 'Host a celebration to boost community spirit and unity.',
+      type: 'improve',
+      rating: 'morale',
+      impact: 2,
+      difficulty: 'easy',
+      requirements: ['Entertainment', 'Food supplies', 'Security'],
+      rewards: ['Improved loyalty', 'Cultural preservation']
+    },
+    {
+      id: 'spread-propaganda',
+      title: 'Spread Dissent',
+      description: 'Launch a propaganda campaign to turn citizens against leadership.',
+      type: 'decrease',
+      rating: 'morale',
+      impact: -2,
+      difficulty: 'medium',
+      requirements: ['Communication network', 'Persuasive materials'],
+      rewards: ['Internal conflict', 'Reduced effectiveness']
+    },
+    {
+      id: 'memorial-service',
+      title: 'Honor the Fallen',
+      description: 'Organize a memorial service for those lost in recent conflicts.',
+      type: 'improve',
+      rating: 'morale',
+      impact: 1,
+      difficulty: 'easy',
+      requirements: ['Community leaders', 'Memorial materials'],
+      rewards: ['Healing process', 'Unity']
+    }
+  ],
+  environment: [
+    {
+      id: 'cleanup-waste',
+      title: 'Environmental Cleanup',
+      description: 'Remove toxic waste and restore polluted areas.',
+      type: 'improve',
+      rating: 'environment',
+      impact: 2,
+      difficulty: 'hard',
+      requirements: ['Cleanup equipment', 'Protective gear', 'Disposal site'],
+      rewards: ['Healthier ecosystem', 'Sustainable future']
+    },
+    {
+      id: 'dump-toxins',
+      title: 'Dump Industrial Waste',
+      description: 'Secretly dispose of hazardous materials in the city\'s surroundings.',
+      type: 'decrease',
+      rating: 'environment',
+      impact: -2,
+      difficulty: 'easy',
+      requirements: ['Transport', 'Cover operation'],
+      rewards: ['Cost savings', 'Environmental damage']
+    }
+  ]
+};
+
+// Helper function to generate contextual quests for a city
+const generateQuestsForRating = (city: CityData, rating: keyof CityRatings): CityQuest[] => {
+  const baseQuests = QUEST_TEMPLATES[rating] || [];
+  const currentRating = city.ratings[rating];
+  const completedQuests = city.completedQuests || [];
+  
+  // Filter out completed quests and adjust based on current rating
+  return baseQuests
+    .filter(quest => !completedQuests.includes(quest.id))
+    .map(quest => ({
+      ...quest,
+      // Adjust impact based on current rating (diminishing returns)
+      impact: currentRating > 7 ? Math.ceil(quest.impact * 0.5) : quest.impact
+    }));
+};
+
+// Helper function to get rating color based on value
+const getRatingColor = (value: number): string => {
+  if (value >= 8) return '#10B981'; // Green - Excellent
+  if (value >= 6) return '#F59E0B'; // Yellow - Good
+  if (value >= 4) return '#EF4444'; // Orange - Fair
+  return '#DC2626'; // Red - Poor
+};
+
+// Helper function to get default ratings based on city type
+const getDefaultRatings = (cityType: CityData['type']): CityRatings => {
+  const baseRatings: Record<CityData['type'], CityRatings> = {
+    city: { food: 6, wealth: 7, health: 6, industry: 7, security: 6, morale: 6, environment: 5 },
+    settlement: { food: 5, wealth: 4, health: 4, industry: 3, security: 4, morale: 5, environment: 6 },
+    wasteland: { food: 2, wealth: 2, health: 2, industry: 1, security: 2, morale: 3, environment: 2 },
+    fortress: { food: 4, wealth: 5, health: 5, industry: 4, security: 9, morale: 6, environment: 4 },
+    trade_hub: { food: 7, wealth: 9, health: 6, industry: 6, security: 5, morale: 7, environment: 5 },
+    industrial: { food: 4, wealth: 6, health: 4, industry: 9, security: 5, morale: 4, environment: 2 }
+  };
+  
+  return baseRatings[cityType];
+};
+
 type EditorMode = 'view' | 'add' | 'edit' | 'pan';
 
 export function MapEditor({ 
@@ -116,6 +436,11 @@ export function MapEditor({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  
+  // Quest system state
+  const [selectedRating, setSelectedRating] = useState<keyof CityRatings | null>(null);
+  const [showQuests, setShowQuests] = useState(false);
+  const [availableQuests, setAvailableQuests] = useState<CityQuest[]>([]);
 
   // Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -131,7 +456,9 @@ export function MapEditor({
     resources: [],
     threatLevel: 1,
     politicalStance: 'neutral',
-    description: ''
+    description: '',
+    ratings: getDefaultRatings('city'),
+    completedQuests: []
   });
 
   // Memoized calculations
@@ -219,18 +546,21 @@ export function MapEditor({
     if (readOnly) return;
 
     const snapped = snapToGrid(x, y);
+    const cityType = cityData?.type || 'city';
     const newCity: CityData = {
       id: `city-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: cityData?.name || `New City ${mapState.cities.length + 1}`,
       x: snapped.x,
       y: snapped.y,
-      type: cityData?.type || 'city',
+      type: cityType,
       population: cityData?.population || 1000,
       controllingFaction: cityData?.controllingFaction || '',
       resources: cityData?.resources || [],
       threatLevel: cityData?.threatLevel || 1,
       politicalStance: cityData?.politicalStance || 'neutral',
       description: cityData?.description || '',
+      ratings: cityData?.ratings || getDefaultRatings(cityType),
+      completedQuests: cityData?.completedQuests || [],
       metadata: cityData?.metadata || {}
     };
 
@@ -265,8 +595,45 @@ export function MapEditor({
 
     if (selectedCity?.id === cityId) {
       setSelectedCity(null);
+      setShowQuests(false);
+      setSelectedRating(null);
     }
   }, [readOnly, mapState.cities, selectedCity, updateMapState]);
+
+  // Quest management functions
+  const handleRatingClick = useCallback((rating: keyof CityRatings) => {
+    if (!selectedCity) return;
+    
+    const quests = generateQuestsForRating(selectedCity, rating);
+    setAvailableQuests(quests);
+    setSelectedRating(rating);
+    setShowQuests(true);
+  }, [selectedCity]);
+
+  const executeQuest = useCallback((quest: CityQuest) => {
+    if (!selectedCity || readOnly) return;
+
+    const updatedRating = Math.max(0, Math.min(10, selectedCity.ratings[quest.rating] + quest.impact));
+    const updatedCompletedQuests = [...(selectedCity.completedQuests || []), quest.id];
+
+    const updatedCity = {
+      ...selectedCity,
+      ratings: {
+        ...selectedCity.ratings,
+        [quest.rating]: updatedRating
+      },
+      completedQuests: updatedCompletedQuests
+    };
+
+    updateCity(selectedCity.id, updatedCity);
+    setSelectedCity(updatedCity);
+
+    // Refresh available quests
+    if (selectedRating) {
+      const newQuests = generateQuestsForRating(updatedCity, selectedRating);
+      setAvailableQuests(newQuests);
+    }
+  }, [selectedCity, readOnly, updateCity, selectedRating]);
 
   // Map interaction handlers
   const handleMapClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -560,6 +927,8 @@ export function MapEditor({
           threatLevel: 3,
           politicalStance: 'allied' as const,
           description: '« Les Blouses Blanches » - POLITICAL CRISIS: Internal power struggle between Director Vasquez (pro-isolation) and Chief Surgeon Romano (aggressive expansion). Recent epidemic in Salvage City blamed on their "medical rationing" policy.',
+          ratings: { food: 4, wealth: 6, health: 9, industry: 5, security: 4, morale: 5, environment: 6 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Emergency medical corridors', 'Pharmaceutical smuggling routes'],
@@ -578,6 +947,8 @@ export function MapEditor({
           threatLevel: 3,
           politicalStance: 'hostile' as const,
           description: '« Les Raffineurs » - SECURITY ALERT: Frequent pirate raids targeting fuel convoys. Rumors of "Fuel City" supplying refined petroleum to rogue factions.',
+          ratings: { food: 3, wealth: 7, health: 4, industry: 6, security: 3, morale: 4, environment: 3 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Armored fuel convoys', 'Smuggled fuel pipelines'],
@@ -589,13 +960,15 @@ export function MapEditor({
           name: 'Cité Industrielle',
           x: 450,
           y: 280,
-          type: 'settlement' as const,
+          type: 'industrial' as const,
           population: 25000,
           controllingFaction: 'Les Forgerons d\'Acier',
           resources: ['metal', 'technology', 'machinery', 'weapons manufacturing'],
           threatLevel: 4,
           politicalStance: 'neutral' as const,
           description: '« Les Forgerons d\'Acier » - TECHNOLOGICAL ARMS RACE: Developing advanced autonomous drones and weapons. Considers the Treaty of Two Braziers obsolete.',
+          ratings: { food: 4, wealth: 6, health: 4, industry: 9, security: 5, morale: 4, environment: 2 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Component supply lines', 'Weapons export routes'],
@@ -614,6 +987,8 @@ export function MapEditor({
           threatLevel: 4,
           politicalStance: 'friendly' as const,
           description: '« Les Gardiens de la Source » - INTERNAL REBELLION: Facing widespread discontent due to water rationing and perceived favoritism towards allied states.',
+          ratings: { food: 9, wealth: 5, health: 6, industry: 4, security: 8, morale: 3, environment: 7 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Vital water caravans', 'Food distribution networks'],
@@ -632,6 +1007,8 @@ export function MapEditor({
           threatLevel: 1,
           politicalStance: 'neutral' as const,
           description: '« Les Faiseurs de Rêves » - PROPAGANDA WARFARE: Broadcasting heavily biased news and entertainment to influence public opinion across the basin.',
+          ratings: { food: 7, wealth: 8, health: 6, industry: 6, security: 5, morale: 8, environment: 5 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Information smuggling', 'Cultural exchange (controlled)'],
@@ -650,6 +1027,8 @@ export function MapEditor({
           threatLevel: 5,
           politicalStance: 'hostile' as const,
           description: '« Le Réacteur à Ciel Ouvert » - NUCLEAR DETERRENCE: Possesses the last functional nuclear arsenal. Maintains strict isolation.',
+          ratings: { food: 3, wealth: 5, health: 3, industry: 8, security: 7, morale: 2, environment: 1 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Restricted energy conduits', 'Black market tech sales'],
@@ -668,6 +1047,8 @@ export function MapEditor({
           threatLevel: 3,
           politicalStance: 'neutral' as const,
           description: '« Les Fossoyeurs » - RESOURCE DEPENDENCY: Crucial supplier of metals and salvage, but relies heavily on Fuel City for energy.',
+          ratings: { food: 3, wealth: 4, health: 3, industry: 5, security: 4, morale: 5, environment: 4 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Scrap metal shipments', 'Salvaged technology exchange'],
@@ -686,6 +1067,8 @@ export function MapEditor({
           threatLevel: 5,
           politicalStance: 'hostile' as const,
           description: '« Les Arsenaux » - MILITARY HEGEMONY & DEBT: Dominates regional security through its powerful military, but is heavily indebted to Industrial City.',
+          ratings: { food: 4, wealth: 3, health: 5, industry: 7, security: 9, morale: 6, environment: 4 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Arms shipments', 'Mercenary recruitment'],
@@ -704,6 +1087,8 @@ export function MapEditor({
           threatLevel: 1,
           politicalStance: 'neutral' as const,
           description: '« Le Paradis Perdu » - ISOLATIONIST MYSTERY: Highly advanced, self-sufficient, and enigmatic. Rarely interacts with other city-states.',
+          ratings: { food: 10, wealth: 8, health: 10, industry: 9, security: 8, morale: 9, environment: 10 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Rumored hyperspace routes', 'Sealed diplomatic channels'],
@@ -722,6 +1107,8 @@ export function MapEditor({
           threatLevel: 5,
           politicalStance: 'hostile' as const,
           description: '« Les Fantômes d\'Acier » - SHADOW WARFARE & MANIPULATION: Operates from subterranean bases, wielding advanced surveillance and cyber warfare capabilities.',
+          ratings: { food: 4, wealth: 5, health: 5, industry: 8, security: 9, morale: 6, environment: 4 },
+          completedQuests: [],
           metadata: {
             scenarioId: '550e8400-e29b-41d4-a716-446655440000',
             tradeRoutes: ['Encrypted data streams', 'Covert agent networks'],
@@ -1010,6 +1397,52 @@ export function MapEditor({
                   </div>
                 </div>
 
+                {/* City Ratings System */}
+                <div className="border-t border-slate-600 pt-4">
+                  <Label className="text-white text-base font-semibold">Development & Influence</Label>
+                  <p className="text-slate-400 text-xs mt-1 mb-3">Click on any rating to view available quests</p>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    {RATING_CATEGORIES.map((category) => {
+                      const value = selectedCity.ratings[category.key];
+                      return (
+                        <button
+                          key={category.key}
+                          onClick={() => handleRatingClick(category.key)}
+                          className="flex items-center justify-between p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors group"
+                          title={category.description}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{category.icon}</span>
+                            <span className="text-white text-sm font-medium">{category.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: 10 }, (_, i) => (
+                                <div
+                                  key={i}
+                                  className={`w-1.5 h-4 rounded-sm ${
+                                    i < value ? getRatingColor(value) : 'bg-slate-600'
+                                  }`}
+                                  style={{ 
+                                    backgroundColor: i < value ? getRatingColor(value) : undefined 
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <span 
+                              className="text-sm font-bold min-w-[2rem] text-center"
+                              style={{ color: getRatingColor(value) }}
+                            >
+                              {value}/10
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {selectedCity.population && (
                   <div>
                     <Label className="text-slate-400 text-sm">Population</Label>
@@ -1065,6 +1498,15 @@ export function MapEditor({
                     <p className="text-slate-300 text-sm mt-1">
                       {selectedCity.description}
                     </p>
+                  </div>
+                )}
+
+                {selectedCity.completedQuests && selectedCity.completedQuests.length > 0 && (
+                  <div>
+                    <Label className="text-slate-400 text-sm">Completed Quests ({selectedCity.completedQuests.length})</Label>
+                    <div className="text-slate-500 text-xs mt-1">
+                      Recent activities have shaped this city's development
+                    </div>
                   </div>
                 )}
               </div>
@@ -1167,6 +1609,131 @@ export function MapEditor({
           </div>
         )}
       </div>
+
+      {/* Quest System Modal */}
+      {showQuests && selectedCity && selectedRating && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-3xl max-h-[80vh] bg-slate-800 border-slate-700 overflow-hidden flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white flex items-center gap-3">
+                  <span className="text-2xl">
+                    {RATING_CATEGORIES.find(c => c.key === selectedRating)?.icon}
+                  </span>
+                  <div>
+                    <div>{RATING_CATEGORIES.find(c => c.key === selectedRating)?.label} Quests</div>
+                    <div className="text-sm text-slate-400 font-normal">
+                      Current: {selectedCity.ratings[selectedRating]}/10 • {selectedCity.name}
+                    </div>
+                  </div>
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowQuests(false);
+                    setSelectedRating(null);
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {availableQuests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+                    <h3 className="text-lg font-medium text-white mb-2">No Available Quests</h3>
+                    <p className="text-slate-400">
+                      All quests for this rating have been completed or there are no suitable opportunities available.
+                    </p>
+                  </div>
+                ) : (
+                  availableQuests.map((quest) => (
+                    <div
+                      key={quest.id}
+                      className={`p-4 rounded-lg border transition-colors ${
+                        quest.type === 'improve' 
+                          ? 'bg-green-900/20 border-green-700 hover:bg-green-900/30' 
+                          : 'bg-red-900/20 border-red-700 hover:bg-red-900/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            quest.type === 'improve' ? 'bg-green-700' : 'bg-red-700'
+                          }`}>
+                            {quest.type === 'improve' ? '⬆️' : '⬇️'}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-semibold">{quest.title}</h4>
+                            <div className="flex items-center gap-3 text-sm text-slate-400">
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                quest.difficulty === 'easy' ? 'bg-green-700/50 text-green-200' :
+                                quest.difficulty === 'medium' ? 'bg-yellow-700/50 text-yellow-200' :
+                                'bg-red-700/50 text-red-200'
+                              }`}>
+                                {quest.difficulty.toUpperCase()}
+                              </span>
+                              <span className={quest.type === 'improve' ? 'text-green-400' : 'text-red-400'}>
+                                {quest.impact > 0 ? '+' : ''}{quest.impact} {RATING_CATEGORIES.find(c => c.key === selectedRating)?.label}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => executeQuest(quest)}
+                          disabled={readOnly}
+                          className={quest.type === 'improve' ? 
+                            'bg-green-600 hover:bg-green-700 text-white' : 
+                            'bg-red-600 hover:bg-red-700 text-white'
+                          }
+                        >
+                          Execute
+                        </Button>
+                      </div>
+
+                      <p className="text-slate-300 text-sm mb-3">
+                        {quest.description}
+                      </p>
+
+                      {quest.requirements && quest.requirements.length > 0 && (
+                        <div className="mb-2">
+                          <Label className="text-slate-400 text-xs">Requirements:</Label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {quest.requirements.map((req, index) => (
+                              <Badge key={index} variant="outline" className="text-xs text-slate-300 border-slate-600">
+                                {req}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {quest.rewards && quest.rewards.length > 0 && (
+                        <div>
+                          <Label className="text-slate-400 text-xs">Rewards:</Label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {quest.rewards.map((reward, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {reward}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* City Edit Modal */}
       {showCityForm && editingCity && (
@@ -1275,6 +1842,40 @@ export function MapEditor({
                   rows={3}
                   placeholder="Describe this city..."
                 />
+              </div>
+
+              {/* City Ratings Configuration */}
+              <div className="border-t border-slate-600 pt-4">
+                <Label className="text-white text-base font-semibold mb-3 block">City Ratings</Label>
+                <div className="grid grid-cols-1 gap-4">
+                  {RATING_CATEGORIES.map((category) => (
+                    <div key={category.key}>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-slate-300 text-sm flex items-center gap-2">
+                          <span>{category.icon}</span>
+                          {category.label}
+                        </Label>
+                        <span className="text-white font-medium">
+                          {cityForm.ratings?.[category.key] || 0}/10
+                        </span>
+                      </div>
+                      <Slider
+                        value={[cityForm.ratings?.[category.key] || 0]}
+                        onValueChange={([value]) => 
+                          setCityForm(prev => ({
+                            ...prev,
+                            ratings: { ...prev.ratings, [category.key]: value } as CityRatings
+                          }))
+                        }
+                        min={0}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <p className="text-slate-400 text-xs mt-1">{category.description}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
