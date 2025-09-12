@@ -543,6 +543,202 @@ export function MapEditor({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo, saveMapState, selectedCity, deleteCity, readOnly]);
 
+  // Initialize with default Mediterranean Basin scenario cities
+  useEffect(() => {
+    if (initialCities.length === 0) {
+      // Load default Mediterranean cities from the scenario
+      const defaultCities = [
+        {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          name: 'Cité Médicale',
+          x: 200,
+          y: 300,
+          type: 'city' as const,
+          population: 35000,
+          controllingFaction: 'Les Blouses Blanches',
+          resources: ['medicine', 'medical technology', 'pharmaceuticals', 'biological weapons'],
+          threatLevel: 3,
+          politicalStance: 'allied' as const,
+          description: '« Les Blouses Blanches » - POLITICAL CRISIS: Internal power struggle between Director Vasquez (pro-isolation) and Chief Surgeon Romano (aggressive expansion). Recent epidemic in Salvage City blamed on their "medical rationing" policy.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Emergency medical corridors', 'Pharmaceutical smuggling routes'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440002',
+          name: 'Cité du Carburant',
+          x: 350,
+          y: 400,
+          type: 'settlement' as const,
+          population: 12000,
+          controllingFaction: 'Les Raffineurs',
+          resources: ['fuel', 'technology'],
+          threatLevel: 3,
+          politicalStance: 'hostile' as const,
+          description: '« Les Raffineurs » - SECURITY ALERT: Frequent pirate raids targeting fuel convoys. Rumors of "Fuel City" supplying refined petroleum to rogue factions.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Armored fuel convoys', 'Smuggled fuel pipelines'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440003',
+          name: 'Cité Industrielle',
+          x: 450,
+          y: 280,
+          type: 'settlement' as const,
+          population: 25000,
+          controllingFaction: 'Les Forgerons d\'Acier',
+          resources: ['metal', 'technology', 'machinery', 'weapons manufacturing'],
+          threatLevel: 4,
+          politicalStance: 'neutral' as const,
+          description: '« Les Forgerons d\'Acier » - TECHNOLOGICAL ARMS RACE: Developing advanced autonomous drones and weapons. Considers the Treaty of Two Braziers obsolete.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Component supply lines', 'Weapons export routes'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440004',
+          name: 'Cité de l\'Eau & Alimentation',
+          x: 300,
+          y: 220,
+          type: 'fortress' as const,
+          population: 18000,
+          controllingFaction: 'Les Gardiens de la Source',
+          resources: ['food', 'water', 'seeds', 'agricultural technology'],
+          threatLevel: 4,
+          politicalStance: 'friendly' as const,
+          description: '« Les Gardiens de la Source » - INTERNAL REBELLION: Facing widespread discontent due to water rationing and perceived favoritism towards allied states.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Vital water caravans', 'Food distribution networks'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440005',
+          name: 'Cité du Divertissement',
+          x: 550,
+          y: 450,
+          type: 'trade_hub' as const,
+          population: 20000,
+          controllingFaction: 'Les Faiseurs de Rêves',
+          resources: ['information', 'entertainment', 'propaganda', 'espionage'],
+          threatLevel: 1,
+          politicalStance: 'neutral' as const,
+          description: '« Les Faiseurs de Rêves » - PROPAGANDA WARFARE: Broadcasting heavily biased news and entertainment to influence public opinion across the basin.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Information smuggling', 'Cultural exchange (controlled)'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440006',
+          name: 'Nuke City',
+          x: 150,
+          y: 180,
+          type: 'city' as const,
+          population: 8000,
+          controllingFaction: 'Le Réacteur à Ciel Ouvert',
+          resources: ['energy', 'technology', 'weapons', 'nuclear materials'],
+          threatLevel: 5,
+          politicalStance: 'hostile' as const,
+          description: '« Le Réacteur à Ciel Ouvert » - NUCLEAR DETERRENCE: Possesses the last functional nuclear arsenal. Maintains strict isolation.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Restricted energy conduits', 'Black market tech sales'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440007',
+          name: 'Cité des Métaux & Recyclage',
+          x: 400,
+          y: 500,
+          type: 'settlement' as const,
+          population: 10000,
+          controllingFaction: 'Les Fossoyeurs',
+          resources: ['metal', 'rare_materials', 'salvage', 'radiation shielding'],
+          threatLevel: 3,
+          politicalStance: 'neutral' as const,
+          description: '« Les Fossoyeurs » - RESOURCE DEPENDENCY: Crucial supplier of metals and salvage, but relies heavily on Fuel City for energy.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Scrap metal shipments', 'Salvaged technology exchange'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440008',
+          name: 'Cité de l\'Armement & Défense',
+          x: 600,
+          y: 280,
+          type: 'fortress' as const,
+          population: 22000,
+          controllingFaction: 'Les Arsenaux',
+          resources: ['weapons', 'explosives', 'armor', 'military hardware'],
+          threatLevel: 5,
+          politicalStance: 'hostile' as const,
+          description: '« Les Arsenaux » - MILITARY HEGEMONY & DEBT: Dominates regional security through its powerful military, but is heavily indebted to Industrial City.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Arms shipments', 'Mercenary recruitment'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440009',
+          name: 'L\'Île des Anciens',
+          x: 700,
+          y: 350,
+          type: 'city' as const,
+          population: 5000,
+          controllingFaction: 'Le Paradis Perdu',
+          resources: ['pre_war_tech', 'abundant_food', 'clean_water', 'advanced AI'],
+          threatLevel: 1,
+          politicalStance: 'neutral' as const,
+          description: '« Le Paradis Perdu » - ISOLATIONIST MYSTERY: Highly advanced, self-sufficient, and enigmatic. Rarely interacts with other city-states.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Rumored hyperspace routes', 'Sealed diplomatic channels'],
+            createdAt: new Date()
+          }
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          name: 'Bunker Oméga',
+          x: 500,
+          y: 200,
+          type: 'fortress' as const,
+          population: 3000,
+          controllingFaction: 'Les Fantômes d\'Acier',
+          resources: ['advanced_tech', 'ai', 'espionage', 'cyber warfare'],
+          threatLevel: 5,
+          politicalStance: 'hostile' as const,
+          description: '« Les Fantômes d\'Acier » - SHADOW WARFARE & MANIPULATION: Operates from subterranean bases, wielding advanced surveillance and cyber warfare capabilities.',
+          metadata: {
+            scenarioId: '550e8400-e29b-41d4-a716-446655440000',
+            tradeRoutes: ['Encrypted data streams', 'Covert agent networks'],
+            createdAt: new Date()
+          }
+        }
+      ];
+
+      setMapState(prev => ({
+        ...prev,
+        cities: defaultCities
+      }));
+
+      console.log(`[MapEditor] Preloaded ${defaultCities.length} Mediterranean cities from default scenario`);
+    }
+  }, [initialCities]);
+
   return (
     <div className="fixed inset-0 bg-slate-900 flex flex-col">
       {/* Top Toolbar */}
