@@ -493,9 +493,9 @@ export function SessionRecorder({
               <span className="sm:hidden">Play</span>
             </TabsTrigger>
             <TabsTrigger value="library" className="text-white text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0" data-testid="tab-library">
-              <span className="hidden md:inline">Library </span>
-              <span className="md:hidden">Lib </span>
-              ({recordings.length})
+              <span className="hidden md:inline">Library</span>
+              <span className="md:hidden">Lib</span>
+              {' '}({recordings.length})
             </TabsTrigger>
             <TabsTrigger value="insights" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-insights">
               <span className="hidden sm:inline">Insights</span>

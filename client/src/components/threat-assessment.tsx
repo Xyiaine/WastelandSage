@@ -512,9 +512,9 @@ export function ThreatAssessment({
           <TabsList className="grid w-full grid-cols-4 bg-slate-700 h-auto p-1">
             <TabsTrigger value="overview" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="factors" className="text-white text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0" data-testid="tab-factors">
-              <span className="hidden md:inline">Factors </span>
-              <span className="md:hidden">F </span>
-              ({threatFactors.length})
+              <span className="hidden md:inline">Factors</span>
+              <span className="md:hidden">F</span>
+              {' '}({threatFactors.length})
             </TabsTrigger>
             <TabsTrigger value="predictions" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-predictions">
               <span className="hidden sm:inline">Predictions</span>
