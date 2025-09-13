@@ -447,17 +447,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Session Tracker */}
-              {session && !showSessionRecorder && !showThreatAssessment && (
-                <div className="card-compact">
-                  <SessionTracker
-                    sessionId={session.id}
-                    scenarioId={undefined}
-                    players={['Player 1', 'Player 2', 'Player 3']}
-                  />
-                </div>
-              )}
-
               {/* Session-Scenario Linker */}
               {!showSessionRecorder && !showThreatAssessment && (
                 <div className="card-compact">
@@ -466,6 +455,17 @@ export default function Dashboard() {
                     onLinkedScenariosUpdate={(scenarios) => {
                       console.log('Linked scenarios updated:', scenarios);
                     }}
+                  />
+                </div>
+              )}
+
+              {/* Session Tracker */}
+              {session && !showSessionRecorder && !showThreatAssessment && (
+                <div className="card-compact">
+                  <SessionTracker
+                    sessionId={session.id}
+                    scenarioId={undefined}
+                    players={['Player 1', 'Player 2', 'Player 3']}
                   />
                 </div>
               )}
