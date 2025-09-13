@@ -6,6 +6,10 @@ import { securityHeaders, generalApiLimit, sanitizeInput } from './middleware/se
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
 const app = express();
+
+// Trust proxy setting for proper rate limiting behind reverse proxy
+app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
