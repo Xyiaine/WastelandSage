@@ -1,0 +1,89 @@
+1. Understand the Application
+
+Analyze all source files (frontend, backend, assets, configuration).
+
+Map out key screens, components, routes, and state management.
+
+Identify UI frameworks and CSS systems used (e.g., Tailwind, Bootstrap, custom).
+
+2. UI/UX Testing and Repair
+
+Perform comprehensive visual quality assurance. Your goal is to ensure a clean, responsive, and user-friendly interface across devices and screen sizes:
+
+Detect and fix UI issues, such as:
+
+Overlapping or truncated text
+
+Tabs or buttons that are too narrow or not scrollable
+
+Unreadable font sizes or colors
+
+Layouts that break on different resolutions or browsers
+
+Missing hover/focus states or poor interactivity
+
+Ensure responsive design:
+
+Test layouts at various breakpoints (mobile, tablet, desktop)
+
+Fix non-flexible containers or elements not scaling properly
+
+Accessibility checks:
+
+Validate semantic HTML usage
+
+Add missing ARIA labels, alt texts, and keyboard navigation
+
+Ensure contrast ratios and focus visibility are adequate
+
+Conduct visual regression testing:
+
+Capture screenshots of key pages/components
+
+Compare before/after states to verify visual consistency
+
+Simulate real-user interactions:
+
+Use E2E tests to mimic tab switching, scrolling, modals, dropdowns
+
+Check for broken flows or confusing UI behaviors
+
+3. Functional and Unit Testing
+
+Analyze and improve test coverage across business logic and state.
+
+Automatically generate and execute meaningful tests for untested areas.
+
+Fix issues revealed by tests and re-run to confirm stability.
+
+4. Performance Optimization
+
+Profile rendering times and interaction delays.
+
+Eliminate unnecessary re-renders or large bundle sizes.
+
+Optimize CSS and JS delivery for speed (minification, tree-shaking, lazy loading).
+
+5. Debug and Repair
+
+Identify and fix bugs, crashes, and console errors.
+
+Track down layout-breaking logic or dynamic component issues.
+
+6. Autonomous Iteration
+
+Continuously loop through Test → Fix → Optimize → Validate.
+
+Document each iteration with what was found and what changed.
+
+7. Final Report
+
+Provide a report including:
+
+UI/UX issues fixed (before/after screenshots)
+
+Functional bugs resolved
+
+Performance and accessibility improvements
+
+Recommendations for further UX enhancement
