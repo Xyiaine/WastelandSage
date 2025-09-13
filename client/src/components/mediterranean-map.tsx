@@ -10,7 +10,7 @@
  * - Real-time updates from scenario data
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -139,7 +139,7 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
   const mapRef = useRef<HTMLDivElement>(null);
 
   // Fetch city-specific data when a city is selected
-  const fetchCityData = async (region: Region) => {
+  const fetchCityData = useCallback(async (region: Region) => {
     if (!currentScenario) return;
 
     try {
@@ -168,28 +168,36 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentScenario]);
 
-  const handleCityClick = (region: Region) => {
+  const handleCityClick = useCallback((region: Region) => {
     setSelectedCity(region);
     fetchCityData(region);
-  };
+  }, [fetchCityData]);
 
   // Generate city positions dynamically based on current regions
   const cityPositions = React.useMemo(() => generateCityPositions(regions), [regions]);
 
-  const getCityPosition = (regionId: string): CityPosition | undefined => {
-    return cityPositions.find(pos => pos.regionId === regionId);
-  };
+  const positionsById = useMemo(() => {
+    const map: Record<string, CityPosition> = {};
+    cityPositions.forEach(pos => {
+      map[pos.regionId] = pos;
+    });
+    return map;
+  }, [cityPositions]);
 
-  const getPoliticalStanceIcon = (stance: string | null) => {
+  const getCityPosition = useCallback((regionId: string): CityPosition | undefined => {
+    return positionsById[regionId];
+  }, [positionsById]);
+
+  const getPoliticalStanceIcon = useCallback((stance: string | null) => {
     switch (stance) {
       case 'hostile': return <AlertTriangle className="h-3 w-3" />;
       case 'allied': return <Shield className="h-3 w-3" />;
       case 'friendly': return <Users className="h-3 w-3" />;
       default: return <Navigation className="h-3 w-3" />;
     }
-  };
+  }, []);
 
   return (
     <div className="w-full h-full bg-slate-900 rounded-lg overflow-hidden">

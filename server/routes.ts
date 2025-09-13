@@ -494,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate AI-powered NPC
-  app.post("/api/generate-npc", async (req, res) => {
+  app.post("/api/generate-npc", aiGenerationLimit, async (req, res) => {
     const startTime = Date.now();
 
     try {

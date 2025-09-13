@@ -14,7 +14,7 @@
  * - Drag-and-drop for quick reuse
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -125,18 +125,18 @@ export function InteractiveLibrary({ showTitle = true }: InteractiveLibraryProps
     }
   };
 
-  const fetchAllRegions = async () => {
+  const fetchAllRegions = useCallback(async () => {
     try {
-      // Since there's no endpoint to get all regions, we'll fetch them per scenario
-      // In a real app, you'd want a dedicated endpoint for this
-      const allRegions: Region[] = [];
-      for (const scenario of scenarios) {
-        const response = await fetch(`/api/scenarios/${scenario.id}/regions`);
-        if (response.ok) {
-          const regionData = await response.json();
-          allRegions.push(...regionData);
-        }
-      }
+      // Fetch regions in parallel instead of sequentially for better performance
+      const regionPromises = scenarios.map(scenario =>
+        fetch(`/api/scenarios/${scenario.id}/regions`)
+          .then(response => response.ok ? response.json() : [])
+          .catch(() => [])
+      );
+      
+      const regionResults = await Promise.all(regionPromises);
+      const allRegions: Region[] = regionResults.flat();
+      
       setRegions(allRegions);
       setStats(prev => ({
         ...prev,
@@ -145,7 +145,7 @@ export function InteractiveLibrary({ showTitle = true }: InteractiveLibraryProps
     } catch (error) {
       console.error('Failed to fetch regions:', error);
     }
-  };
+  }, [scenarios]);
 
   const fetchScenarioRegions = async (scenarioId: string) => {
     try {
@@ -159,34 +159,38 @@ export function InteractiveLibrary({ showTitle = true }: InteractiveLibraryProps
     }
   };
 
-  // Filter functions
-  const filteredScenarios = scenarios.filter(scenario => {
-    const matchesSearch = scenario.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         scenario.mainIdea.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (scenario.keyThemes && scenario.keyThemes.some(theme => 
-                           theme.toLowerCase().includes(searchQuery.toLowerCase())
-                         ));
-    
-    const matchesStatus = statusFilter === 'all' || scenario.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Memoized filter functions for better performance
+  const filteredScenarios = useMemo(() => {
+    return scenarios.filter(scenario => {
+      const matchesSearch = scenario.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           scenario.mainIdea.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (scenario.keyThemes && scenario.keyThemes.some(theme => 
+                             theme.toLowerCase().includes(searchQuery.toLowerCase())
+                           ));
+      
+      const matchesStatus = statusFilter === 'all' || scenario.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [scenarios, searchQuery, statusFilter]);
 
-  const filteredRegions = regions.filter(region => {
-    const matchesSearch = region.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (region.description && region.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                         (region.controllingFaction && region.controllingFaction.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesType = typeFilter === 'all' || region.type === typeFilter;
-    
-    return matchesSearch && matchesType;
-  });
+  const filteredRegions = useMemo(() => {
+    return regions.filter(region => {
+      const matchesSearch = region.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (region.description && region.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                           (region.controllingFaction && region.controllingFaction.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesType = typeFilter === 'all' || region.type === typeFilter;
+      
+      return matchesSearch && matchesType;
+    });
+  }, [regions, searchQuery, typeFilter]);
 
-  const getThreatColor = (level: number) => {
+  const getThreatColor = useCallback((level: number) => {
     if (level <= 2) return 'bg-green-500';
     if (level <= 3) return 'bg-yellow-500';
     return 'bg-red-500';
-  };
+  }, []);
 
   // Effects
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -66,7 +66,7 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
     }
   });
 
-  const getNodeColor = (type: NodeType) => {
+  const getNodeColor = useCallback((type: NodeType) => {
     switch (type) {
       case 'event': return '#D4722B'; // rust
       case 'npc': return '#C9A96E'; // brass
@@ -75,15 +75,22 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
       case 'item': return '#3B82F6'; // blue
       default: return '#525252'; // steel
     }
-  };
+  }, []);
 
-  const getNodeConnections = (nodeId: string) => {
-    return connections.filter(
-      conn => conn.fromNodeId === nodeId || conn.toNodeId === nodeId
-    ).length;
-  };
+  const connectionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    connections.forEach(conn => {
+      counts[conn.fromNodeId] = (counts[conn.fromNodeId] || 0) + 1;
+      counts[conn.toNodeId] = (counts[conn.toNodeId] || 0) + 1;
+    });
+    return counts;
+  }, [connections]);
 
-  const handleNodeClick = (node: NodeData) => {
+  const getNodeConnections = useCallback((nodeId: string) => {
+    return connectionCounts[nodeId] || 0;
+  }, [connectionCounts]);
+
+  const handleNodeClick = useCallback((node: NodeData) => {
     setSelectedNode({
       id: node.id,
       type: node.type,
@@ -92,25 +99,38 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
       connections: getNodeConnections(node.id),
       createdAt: node.createdAt
     });
-  };
+  }, [getNodeConnections]);
 
-  // Simple force-directed layout simulation
-  useEffect(() => {
-    if (!svgRef.current || nodes.length === 0) return;
-
-    const svg = svgRef.current;
+  // Create immutable node positions to avoid mutating props
+  const nodePositions = useMemo(() => {
+    if (nodes.length === 0) return {};
+    
     const width = 400;
     const height = 350;
     const centerX = width / 2;
     const centerY = height / 2;
+    const positions: Record<string, { x: number; y: number }> = {};
 
     // Position nodes in a circular layout for now
     nodes.forEach((node, index) => {
       const angle = (index / nodes.length) * 2 * Math.PI;
       const radius = Math.min(width, height) * 0.3;
-      node.x = centerX + Math.cos(angle) * radius;
-      node.y = centerY + Math.sin(angle) * radius;
+      positions[node.id] = {
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius
+      };
     });
+    
+    return positions;
+  }, [nodes]);
+
+  // Create node lookup map for O(1) access
+  const nodeById = useMemo(() => {
+    const map: Record<string, NodeData> = {};
+    nodes.forEach(node => {
+      map[node.id] = node;
+    });
+    return map;
   }, [nodes]);
 
   const handleCreateNode = () => {
@@ -193,17 +213,20 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
           {/* Connections */}
           <g className="connections">
             {connections.map(connection => {
-              const fromNode = nodes.find(n => n.id === connection.fromNodeId);
-              const toNode = nodes.find(n => n.id === connection.toNodeId);
-              if (!fromNode || !toNode) return null;
+              const fromNode = nodeById[connection.fromNodeId];
+              const toNode = nodeById[connection.toNodeId];
+              const fromPos = nodePositions[connection.fromNodeId];
+              const toPos = nodePositions[connection.toNodeId];
+              
+              if (!fromNode || !toNode || !fromPos || !toPos) return null;
               
               return (
                 <line
                   key={connection.id}
-                  x1={fromNode.x}
-                  y1={fromNode.y}
-                  x2={toNode.x}
-                  y2={toNode.y}
+                  x1={fromPos.x}
+                  y1={fromPos.y}
+                  x2={toPos.x}
+                  y2={toPos.y}
                   className="connection-line"
                   strokeWidth={connection.strength}
                 />
@@ -215,13 +238,16 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
           <g className="nodes">
             {nodes.map(node => {
               const color = getNodeColor(node.type);
+              const position = nodePositions[node.id];
+              
+              if (!position) return null;
               
               if (node.type === 'event') {
                 return (
                   <g key={node.id}>
                     <circle
-                      cx={node.x}
-                      cy={node.y}
+                      cx={position.x}
+                      cy={position.y}
                       r="12"
                       fill={color}
                       stroke={color}
@@ -231,8 +257,8 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                       data-testid={`node-${node.type}-${node.id}`}
                     />
                     <text
-                      x={node.x}
-                      y={node.y + 4}
+                      x={position.x}
+                      y={position.y + 4}
                       textAnchor="middle"
                       className="text-xs fill-white font-mono pointer-events-none"
                     >
@@ -244,8 +270,8 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                 return (
                   <g key={node.id}>
                     <rect
-                      x={node.x - 6}
-                      y={node.y - 6}
+                      x={position.x - 6}
+                      y={position.y - 6}
                       width="12"
                       height="12"
                       fill={color}
@@ -256,8 +282,8 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                       data-testid={`node-${node.type}-${node.id}`}
                     />
                     <text
-                      x={node.x}
-                      y={node.y + 3}
+                      x={position.x}
+                      y={position.y + 3}
                       textAnchor="middle"
                       className="text-xs fill-white font-mono pointer-events-none"
                     >
@@ -267,7 +293,7 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                 );
               } else {
                 // Triangle for factions, locations, items
-                const points = `${node.x},${node.y - 8} ${node.x - 7},${node.y + 6} ${node.x + 7},${node.y + 6}`;
+                const points = `${position.x},${position.y - 8} ${position.x - 7},${position.y + 6} ${position.x + 7},${position.y + 6}`;
                 return (
                   <g key={node.id}>
                     <polygon
@@ -280,8 +306,8 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                       data-testid={`node-${node.type}-${node.id}`}
                     />
                     <text
-                      x={node.x}
-                      y={node.y + 2}
+                      x={position.x}
+                      y={position.y + 2}
                       textAnchor="middle"
                       className="text-xs fill-white font-mono pointer-events-none"
                     >
