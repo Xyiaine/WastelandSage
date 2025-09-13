@@ -217,7 +217,7 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
           >
             {/* Mediterranean Sea Background */}
             <div className="absolute inset-0 opacity-30">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
+              <svg viewBox="0 0 100 100" className="w-full h-full" role="img" aria-label="Mediterranean Sea coastline with islands">
                 {/* Simple Mediterranean coastline */}
                 <path
                   d="M5,60 Q15,45 25,50 Q35,40 45,45 Q55,35 65,40 Q75,45 85,50 Q90,55 85,65 Q75,70 65,65 Q55,75 45,70 Q35,80 25,75 Q15,70 5,60 Z"
@@ -246,8 +246,8 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
               return (
                 <div
                   key={region.id}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 group ${
-                    isSelected ? 'scale-125 z-20' : 'hover:scale-125 z-10'
+                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust-400 focus-visible:ring-offset-2 focus-visible:rounded-full ${
+                    isSelected ? 'scale-125 z-20' : 'hover:scale-125 focus:scale-125 z-10'
                   }`}
                   style={{
                     left: `${position.x}%`,
@@ -259,6 +259,15 @@ export function MediterraneanMap({ currentScenario, regions, onRegionUpdate }: M
                     console.log('Clicked on city:', region.name);
                     handleCityClick(region);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCityClick(region);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${region.name} - ${region.type} (${region.politicalStance || 'neutral'} stance, threat level ${region.threatLevel})`}
                 >
                   {/* City Marker */}
                   <div className="relative">

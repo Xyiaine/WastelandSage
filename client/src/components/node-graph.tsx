@@ -209,7 +209,10 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
           className="w-full h-full" 
           viewBox="0 0 400 350"
           data-testid="node-graph-svg"
+          role="group"
+          aria-labelledby="node-graph-title"
         >
+          <title id="node-graph-title">Interactive node graph showing relationships between scenario elements</title>
           {/* Connections */}
           <g className="connections">
             {connections.map(connection => {
@@ -252,9 +255,18 @@ export function NodeGraph({ sessionId, nodes, connections }: NodeGraphProps) {
                       fill={color}
                       stroke={color}
                       strokeWidth="2"
-                      className="cursor-pointer hover:opacity-80"
+                      className="cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rust-400 focus-visible:ring-offset-2"
                       onClick={() => handleNodeClick(node)}
                       data-testid={`node-${node.type}-${node.id}`}
+                      role="button"
+                      aria-label={`${node.type} node: ${node.name} - ${node.description || 'No description'}`}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNodeClick(node);
+                        }
+                      }}
                     />
                     <text
                       x={position.x}
