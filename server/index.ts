@@ -2,13 +2,23 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { securityHeaders, generalApiLimit, sanitizeInput } from './middleware/security';
+import { securityHeaders, generalApiLimit, sanitizeInput, logProxyMisconfig } from './middleware/security';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
 const app = express();
 
 // Trust proxy setting for proper rate limiting behind reverse proxy
-app.set('trust proxy', true);
+// Configure trust proxy based on environment variable or defaults
+const trustProxy = process.env.TRUST_PROXY || (process.env.NODE_ENV === 'production' ? '1' : 'false');
+
+if (trustProxy === 'true' || trustProxy === 'false') {
+  app.set('trust proxy', trustProxy === 'true');
+} else if (!isNaN(Number(trustProxy))) {
+  app.set('trust proxy', Number(trustProxy));
+} else {
+  // Handle comma-separated IPs/CIDRs
+  app.set('trust proxy', trustProxy);
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -16,6 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 // Security Middleware
 app.use(cors()); // Enable CORS for all origins
 app.use(securityHeaders); // Set security-related HTTP headers
+app.use('/api', logProxyMisconfig); // Log proxy misconfigurations
 app.use('/api', generalApiLimit); // Apply rate limiting to API routes
 app.use('/api', sanitizeInput); // Sanitize input for API routes
 
@@ -50,6 +61,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log(`[Security] Trust proxy configured: ${trustProxy}`);
   const server = await registerRoutes(app);
 
   // importantly only setup vite in development and after

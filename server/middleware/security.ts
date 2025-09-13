@@ -13,6 +13,19 @@ export const createRateLimit = (windowMs: number, max: number, message: string) 
     legacyHeaders: false,
   });
 
+// Middleware to log potential proxy misconfigurations
+export const logProxyMisconfig = (req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'production') {
+    const clientIP = req.ip;
+    if (!clientIP || clientIP === '127.0.0.1' || clientIP === '::1') {
+      console.warn('[Security] Rate limiting warning: Client IP appears as localhost/loopback. Check trust proxy configuration.');
+    } else if (clientIP.startsWith('10.') || clientIP.startsWith('192.168.') || clientIP.startsWith('172.')) {
+      console.warn(`[Security] Rate limiting warning: Client IP is private network address: ${clientIP}. Verify trust proxy configuration.`);
+    }
+  }
+  next();
+};
+
 // General API rate limit
 export const generalApiLimit = createRateLimit(
   15 * 60 * 1000, // 15 minutes
