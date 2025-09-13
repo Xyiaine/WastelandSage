@@ -21,7 +21,10 @@ import {
   Users, 
   BookOpen,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface Region {
@@ -62,6 +65,9 @@ export function LinkedScenariosPanel({ sessionId }: LinkedScenariosPanelProps) {
   const [npcs, setNpcs] = useState<ScenarioNPC[]>([]);
   const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [scenarioDataCache, setScenarioDataCache] = useState<Map<string, { regions: Region[]; npcs: ScenarioNPC[] }>>(new Map());
 
   // Fetch linked scenarios
   const fetchLinkedScenarios = async () => {
@@ -84,24 +90,61 @@ export function LinkedScenariosPanel({ sessionId }: LinkedScenariosPanelProps) {
     }
   };
 
-  // Fetch scenario details
-  const fetchScenarioDetails = async (scenarioId: string) => {
+  // Fetch scenario details with proper data caching and race condition protection
+  const fetchScenarioDetails = async (scenarioId: string, abortController?: AbortController) => {
+    // Check if data is already cached
+    if (scenarioDataCache.has(scenarioId)) {
+      const cachedData = scenarioDataCache.get(scenarioId)!;
+      setRegions(cachedData.regions);
+      setNpcs(cachedData.npcs);
+      setDetailsError(null);
+      return;
+    }
+
+    setDetailsLoading(true);
+    setDetailsError(null);
+
     try {
       // Fetch regions
-      const regionsResponse = await fetch(`/api/scenarios/${scenarioId}/regions`);
-      if (regionsResponse.ok) {
-        const regionsData = await regionsResponse.json();
-        setRegions(regionsData);
+      const regionsResponse = await fetch(`/api/scenarios/${scenarioId}/regions`, {
+        signal: abortController?.signal
+      });
+      if (!regionsResponse.ok) {
+        throw new Error(`Failed to fetch regions: ${regionsResponse.status}`);
       }
+      const regionsData = await regionsResponse.json();
 
       // Fetch NPCs
-      const npcsResponse = await fetch(`/api/scenarios/${scenarioId}/npcs`);
-      if (npcsResponse.ok) {
-        const npcsData = await npcsResponse.json();
+      const npcsResponse = await fetch(`/api/scenarios/${scenarioId}/npcs`, {
+        signal: abortController?.signal
+      });
+      if (!npcsResponse.ok) {
+        throw new Error(`Failed to fetch NPCs: ${npcsResponse.status}`);
+      }
+      const npcsData = await npcsResponse.json();
+
+      // Only update state if request wasn't aborted and scenario still selected
+      if (!abortController?.signal.aborted && selectedScenario === scenarioId) {
+        setRegions(regionsData);
         setNpcs(npcsData);
+        
+        // Cache the data only after both requests succeed
+        setScenarioDataCache(prev => {
+          const newCache = new Map(prev);
+          newCache.set(scenarioId, { regions: regionsData, npcs: npcsData });
+          return newCache;
+        });
       }
     } catch (err) {
-      console.error('Error fetching scenario details:', err);
+      if (!abortController?.signal.aborted) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setDetailsError(errorMessage);
+        console.error('Error fetching scenario details:', err);
+      }
+    } finally {
+      if (!abortController?.signal.aborted) {
+        setDetailsLoading(false);
+      }
     }
   };
 
@@ -117,15 +160,31 @@ export function LinkedScenariosPanel({ sessionId }: LinkedScenariosPanelProps) {
 
   useEffect(() => {
     if (sessionId) {
+      // Clear cache when session changes to prevent stale data
+      setScenarioDataCache(new Map());
+      setRegions([]);
+      setNpcs([]);
+      setSelectedScenario(null);
       fetchLinkedScenarios();
     }
   }, [sessionId]);
 
   useEffect(() => {
     if (selectedScenario) {
-      fetchScenarioDetails(selectedScenario);
+      // Clear previous data immediately to prevent stale display
+      setRegions([]);
+      setNpcs([]);
+      setDetailsError(null);
+      
+      const abortController = new AbortController();
+      fetchScenarioDetails(selectedScenario, abortController);
+      
+      return () => {
+        abortController.abort();
+      };
     }
-  }, [selectedScenario]);
+  }, [selectedScenario, scenarioDataCache]);
+
 
   if (scenarios.length === 0) {
     return (
@@ -225,8 +284,39 @@ export function LinkedScenariosPanel({ sessionId }: LinkedScenariosPanelProps) {
                         </div>
                       )}
 
-                      {/* Regions Quick List */}
-                      {regions.length > 0 && (
+                      {/* Loading state */}
+                      {detailsLoading && (
+                        <div className="text-center py-4">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto text-blue-400" />
+                          <p className="text-xs text-slate-400 mt-1">Loading scenario details...</p>
+                        </div>
+                      )}
+                      
+                      {/* Error state */}
+                      {detailsError && (
+                        <div className="text-center py-4 space-y-2">
+                          <AlertCircle className="h-4 w-4 mx-auto text-red-400" />
+                          <p className="text-xs text-red-400">{detailsError}</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setDetailsError(null);
+                              fetchScenarioDetails(scenario.id);
+                            }}
+                            className="text-xs h-6 px-2 text-slate-400 hover:text-white"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Retry
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Content - only show when not loading and no error */}
+                      {!detailsLoading && !detailsError && (
+                        <div>
+                          {/* Regions Quick List */}
+                          {regions.length > 0 && (
                         <div>
                           <h5 className="text-sm font-medium text-white mb-1 flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
@@ -277,6 +367,8 @@ export function LinkedScenariosPanel({ sessionId }: LinkedScenariosPanelProps) {
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
                         </div>
                       )}
                     </div>
