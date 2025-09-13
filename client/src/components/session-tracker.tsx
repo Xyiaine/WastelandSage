@@ -228,26 +228,26 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
       <div className="space-y-6">
         {/* Session Controls */}
         <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-4 min-w-0">
               <Button
                 onClick={isSessionActive ? pauseSession : startSession}
-                className={isSessionActive ? "bg-orange-500 hover:bg-orange-600 border-0" : "btn-rust"}
+                className={isSessionActive ? "bg-orange-500 hover:bg-orange-600 border-0 whitespace-nowrap" : "btn-rust whitespace-nowrap"}
                 size="sm"
               >
                 {isSessionActive ? (
-                  <Pause className="h-4 w-4 mr-2" />
+                  <Pause className="h-4 w-4 mr-2 flex-shrink-0" />
                 ) : (
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 mr-2 flex-shrink-0" />
                 )}
                 {isSessionActive ? "Pause" : "Start"}
               </Button>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-mono text-sm">{formatDuration(sessionDuration)}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="font-mono text-sm whitespace-nowrap min-w-fit">{formatDuration(sessionDuration)}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 whitespace-nowrap">
               <div className={`status-dot ${isSessionActive ? 'status-active' : 'status-warning'}`}></div>
               <span className="text-xs font-medium">{isSessionActive ? "Live" : "Paused"}</span>
             </div>
@@ -258,14 +258,15 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-white">Scenario Position</h3>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm text-slate-300">Current Location</label>
               <input
                 type="text"
                 value={scenarioPosition.currentLocation}
                 onChange={(e) => updateLocation(e.target.value)}
-                className="w-full bg-slate-700 border-slate-600 text-white rounded px-3 py-2 text-sm"
+                className="w-full min-w-0 bg-slate-700 border-slate-600 text-white rounded px-3 py-2 text-sm"
+                placeholder="Enter location..."
               />
             </div>
             <div>
@@ -274,29 +275,30 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
                 type="text"
                 value={scenarioPosition.currentPhase}
                 onChange={(e) => updatePhase(e.target.value)}
-                className="w-full bg-slate-700 border-slate-600 text-white rounded px-3 py-2 text-sm"
+                className="w-full min-w-0 bg-slate-700 border-slate-600 text-white rounded px-3 py-2 text-sm"
+                placeholder="Enter phase..."
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium text-foreground">Scenario Progress</label>
-              <span className="text-sm font-mono text-rust">{scenarioPosition.progress}%</span>
+            <div className="flex items-center justify-between mb-3 gap-4">
+              <label className="text-sm font-medium text-foreground flex-shrink-0">Scenario Progress</label>
+              <span className="text-sm font-mono text-rust min-w-fit">{scenarioPosition.progress}%</span>
             </div>
             <Progress value={scenarioPosition.progress} className="h-1.5 bg-muted" />
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-3 mt-3 justify-center">
               <Button
                 onClick={() => updateProgress(scenarioPosition.progress - 10)}
                 size="sm"
-                className="btn-ghost px-3"
+                className="btn-ghost px-4 min-w-fit"
               >
                 -10%
               </Button>
               <Button
                 onClick={() => updateProgress(scenarioPosition.progress + 10)}
                 size="sm"
-                className="btn-ghost px-3"
+                className="btn-ghost px-4 min-w-fit"
               >
                 +10%
               </Button>
@@ -314,45 +316,45 @@ export function SessionTracker({ sessionId, scenarioId, players: playerNames = [
             <div className="space-y-3">
               {players.map((player) => (
                 <div key={player.id} className="p-3 bg-slate-700/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-white">{player.name}</h4>
-                      <Badge variant="outline" className={getPlayerStatusColor(player.status)}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <h4 className="font-medium text-white truncate">{player.name}</h4>
+                      <Badge variant="outline" className={`${getPlayerStatusColor(player.status)} whitespace-nowrap`}>
                         {player.status}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-slate-300">
-                      <Heart className="h-4 w-4" />
-                      {player.health}/{player.maxHealth}
+                    <div className="flex items-center gap-2 text-sm text-slate-300 whitespace-nowrap">
+                      <Heart className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-mono min-w-fit">{player.health}/{player.maxHealth}</span>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <div className="w-full bg-slate-600 rounded-full h-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="w-full bg-slate-600 rounded-full h-3">
                           <div
-                            className={`h-2 rounded-full transition-all ${getHealthColor(player.health, player.maxHealth)}`}
+                            className={`h-3 rounded-full transition-all ${getHealthColor(player.health, player.maxHealth)}`}
                             style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
                           />
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-2 flex-shrink-0">
                         <Button
                           onClick={() => updatePlayerHealth(player.id, player.health - 10)}
                           size="sm"
                           variant="outline"
-                          className="h-6 w-6 p-0 border-red-500 text-red-400"
+                          className="h-8 w-10 text-xs border-red-500 text-red-400 hover:bg-red-500/10"
                         >
-                          -
+                          -10
                         </Button>
                         <Button
                           onClick={() => updatePlayerHealth(player.id, player.health + 10)}
                           size="sm"
                           variant="outline"
-                          className="h-6 w-6 p-0 border-green-500 text-green-400"
+                          className="h-8 w-10 text-xs border-green-500 text-green-400 hover:bg-green-500/10"
                         >
-                          +
+                          +10
                         </Button>
                       </div>
                     </div>
