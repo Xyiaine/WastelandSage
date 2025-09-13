@@ -509,11 +509,18 @@ export function ThreatAssessment({
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 bg-slate-700">
-            <TabsTrigger value="overview" className="text-white">Overview</TabsTrigger>
-            <TabsTrigger value="factors" className="text-white">Factors ({threatFactors.length})</TabsTrigger>
-            <TabsTrigger value="predictions" className="text-white">Predictions</TabsTrigger>
-            <TabsTrigger value="history" className="text-white">History</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-slate-700 h-auto p-1">
+            <TabsTrigger value="overview" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="factors" className="text-white text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0" data-testid="tab-factors">
+              <span className="hidden md:inline">Factors </span>
+              <span className="md:hidden">F </span>
+              ({threatFactors.length})
+            </TabsTrigger>
+            <TabsTrigger value="predictions" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-predictions">
+              <span className="hidden sm:inline">Predictions</span>
+              <span className="sm:hidden">Pred</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-history">History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4 space-y-4">

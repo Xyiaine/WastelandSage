@@ -297,15 +297,33 @@ export function SessionNotes({ sessionId, scenarioId, players = [] }: SessionNot
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 glass-card rounded-lg p-1">
-            <TabsTrigger value="notes" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
-              Notes ({filteredNotes.length})
+          <TabsList className="grid w-full grid-cols-3 glass-card rounded-lg p-1 h-auto">
+            <TabsTrigger 
+              value="notes" 
+              className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500 text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+              data-testid="tab-notes"
+            >
+              <span className="hidden sm:inline">Notes </span>
+              <span className="sm:hidden">N </span>
+              ({filteredNotes.length})
             </TabsTrigger>
-            <TabsTrigger value="choices" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
-              Choices ({filteredChoices.length})
+            <TabsTrigger 
+              value="choices" 
+              className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500 text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+              data-testid="tab-choices"
+            >
+              <span className="hidden sm:inline">Choices </span>
+              <span className="sm:hidden">C </span>
+              ({filteredChoices.length})
             </TabsTrigger>
-            <TabsTrigger value="progress" className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500">
-              Progress ({filteredProgress.length})
+            <TabsTrigger 
+              value="progress" 
+              className="text-foreground data-[state=active]:bg-rust-500/20 data-[state=active]:text-rust-500 text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+              data-testid="tab-progress"
+            >
+              <span className="hidden sm:inline">Progress </span>
+              <span className="sm:hidden">P </span>
+              ({filteredProgress.length})
             </TabsTrigger>
           </TabsList>
 

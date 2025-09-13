@@ -486,11 +486,21 @@ export function SessionRecorder({
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 bg-slate-700">
-            <TabsTrigger value="recorder" className="text-white">Record</TabsTrigger>
-            <TabsTrigger value="playback" className="text-white">Playback</TabsTrigger>
-            <TabsTrigger value="library" className="text-white">Library ({recordings.length})</TabsTrigger>
-            <TabsTrigger value="insights" className="text-white">Insights</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-slate-700 h-auto p-1">
+            <TabsTrigger value="recorder" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-recorder">Record</TabsTrigger>
+            <TabsTrigger value="playback" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-playback">
+              <span className="hidden sm:inline">Playback</span>
+              <span className="sm:hidden">Play</span>
+            </TabsTrigger>
+            <TabsTrigger value="library" className="text-white text-xs sm:text-sm px-2 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0" data-testid="tab-library">
+              <span className="hidden md:inline">Library </span>
+              <span className="md:hidden">Lib </span>
+              ({recordings.length})
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="text-white text-xs sm:text-sm px-2 py-2 min-w-0" data-testid="tab-insights">
+              <span className="hidden sm:inline">Insights</span>
+              <span className="sm:hidden">Info</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="recorder" className="mt-6 space-y-4">

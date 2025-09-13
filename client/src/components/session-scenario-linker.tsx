@@ -243,12 +243,26 @@ export function SessionScenarioLinker({
 
         {selectedSessionId && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 bg-slate-700">
-              <TabsTrigger value="linked" className="text-white">
-                Linked Scenarios ({linkedScenarios.length})
+            <TabsList className="grid w-full grid-cols-2 bg-slate-700 h-auto p-1">
+              <TabsTrigger 
+                value="linked" 
+                className="text-white text-sm px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                data-testid="tab-linked"
+              >
+                <span className="hidden sm:inline">Linked </span>
+                <span className="sm:hidden">Link </span>
+                <span className="hidden md:inline">Scenarios </span>
+                ({linkedScenarios.length})
               </TabsTrigger>
-              <TabsTrigger value="available" className="text-white">
-                Available Scenarios ({unlinkedScenarios.length})
+              <TabsTrigger 
+                value="available" 
+                className="text-white text-sm px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+                data-testid="tab-available"
+              >
+                <span className="hidden sm:inline">Available </span>
+                <span className="sm:hidden">Avail </span>
+                <span className="hidden md:inline">Scenarios </span>
+                ({unlinkedScenarios.length})
               </TabsTrigger>
             </TabsList>
 
